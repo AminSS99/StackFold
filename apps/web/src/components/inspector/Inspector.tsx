@@ -66,7 +66,7 @@ export function Inspector() {
               className={clsx(
                 'flex items-center gap-1.5 py-2.5 px-3 text-xs font-medium border-b-2 transition-colors flex-1 justify-center',
                 isActive
-                  ? 'border-indigo-500 text-indigo-400 font-semibold'
+                  ? 'border-amber-400 text-amber-300 font-semibold'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               )}
             >

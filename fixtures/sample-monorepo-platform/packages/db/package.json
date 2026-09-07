@@ -1,0 +1,12 @@
+{
+  "name": "@platform/db",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@prisma/client": "^5.20.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0"
+  }
+}

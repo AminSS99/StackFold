@@ -1,14 +1,20 @@
 {
   "name": "stackfold-monorepo",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "pnpm -r --filter=\"!sample-ecommerce-app\" build",
-    "test": "pnpm -r --filter=\"!sample-ecommerce-app\" test",
-    "typecheck": "pnpm -r --filter=\"!sample-ecommerce-app\" typecheck",
+    "build": "pnpm build:web && pnpm build:desktop",
+    "build:web": "pnpm -r --filter=\"@stackfold/*\" --filter=\"!@stackfold/desktop\" build",
+    "build:desktop": "pnpm --filter=@stackfold/desktop build",
+    "test": "pnpm -r --filter=\"!sample-ecommerce-app\" --filter=\"!sample-monorepo-platform\" test",
+    "typecheck": "pnpm -r --filter=\"!sample-ecommerce-app\" --filter=\"!sample-monorepo-platform\" typecheck",
     "dev": "pnpm --filter=@stackfold/web dev",
-    "lint": "pnpm -r --filter=\"!sample-ecommerce-app\" lint"
+    "dev:web": "pnpm --filter=@stackfold/web dev",
+    "dev:desktop": "pnpm --filter=@stackfold/desktop dev",
+    "lint": "pnpm -r --filter=\"!sample-ecommerce-app\" --filter=\"!sample-monorepo-platform\" lint"
   },
   "devDependencies": {
+    "playwright": "^1.62.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
   },

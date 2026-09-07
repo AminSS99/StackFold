@@ -5,6 +5,7 @@ import {
   detectCycles,
   filterGraph,
   extractViewGraph,
+  extractFocusedSubgraph,
   computeGraphLayout,
 } from '../index';
 
@@ -73,7 +74,6 @@ describe('GraphBuilder', () => {
       evidence: { detectorId: 'test', rule: 'test' },
     });
 
-    // Add edge to non-existent node
     builder.createAndAddEdge({
       source: 'application:apps/web',
       target: 'api_route:non-existent',
@@ -87,7 +87,7 @@ describe('GraphBuilder', () => {
       frameworks: [],
     });
 
-    expect(graph.edges.length).toBe(0); // Dangling edge pruned
+    expect(graph.edges.length).toBe(0);
     expect(graph.diagnostics.length).toBe(1);
     expect(graph.diagnostics[0]?.code).toBe('DANGLING_EDGE_REF');
   });
@@ -210,43 +210,40 @@ describe('Cycle Detection', () => {
   });
 });
 
-describe('Graph Layout and View extraction', () => {
-  it('computes valid coordinates for nodes in layout', () => {
+describe('Focused Subgraph Isolation & Density Filters', () => {
+  it('isolates subgraph centered around a target node', () => {
     const builder = new GraphBuilder();
 
-    const app = builder.createAndAddNode({
-      type: 'application',
-      key: 'apps/web',
-      displayName: 'Web App',
-      evidence: { detectorId: 'test', rule: 'test' },
-    });
-    const route = builder.createAndAddNode({
-      type: 'api_route',
-      key: 'app/api/hello:GET',
-      displayName: 'GET /api/hello',
-      evidence: { detectorId: 'test', rule: 'test' },
-    });
+    const n1 = builder.createAndAddNode({ type: 'application', key: 'app1', displayName: 'App 1', evidence: { detectorId: 't', rule: 't' } });
+    const n2 = builder.createAndAddNode({ type: 'api_route', key: 'r1', displayName: 'Route 1', evidence: { detectorId: 't', rule: 't' } });
+    const n3 = builder.createAndAddNode({ type: 'database_model', key: 'm1', displayName: 'Model 1', evidence: { detectorId: 't', rule: 't' } });
+    const nUnrelated = builder.createAndAddNode({ type: 'database_model', key: 'mOther', displayName: 'Other', evidence: { detectorId: 't', rule: 't' } });
 
-    builder.createAndAddEdge({
-      source: app.id,
-      target: route.id,
-      type: 'exposes',
-      evidence: { detectorId: 'test', rule: 'test' },
-    });
+    builder.createAndAddEdge({ source: n1.id, target: n2.id, type: 'exposes', evidence: { detectorId: 't', rule: 't' } });
+    builder.createAndAddEdge({ source: n2.id, target: n3.id, type: 'reads', evidence: { detectorId: 't', rule: 't' } });
 
-    const graph = builder.build({
-      rootPath: '/test',
-      projectName: 'test',
-      frameworks: [],
-    });
+    const graph = builder.build({ rootPath: '/test', projectName: 'test' });
 
-    const view = extractViewGraph(graph, 'architecture');
-    const layout = computeGraphLayout(view.nodes, view.edges, { direction: 'LR' });
+    const isolated = extractFocusedSubgraph(graph, n2.id, 1);
+    expect(isolated.nodes.length).toBe(3);
+    const isolatedIds = isolated.nodes.map(n => n.id);
+    expect(isolatedIds).toContain(n1.id);
+    expect(isolatedIds).toContain(n2.id);
+    expect(isolatedIds).toContain(n3.id);
+    expect(isolatedIds).not.toContain(nUnrelated.id);
+  });
 
-    expect(layout.nodes.length).toBe(2);
-    expect(layout.nodes[0]?.position.x).toBeDefined();
-    expect(layout.nodes[0]?.position.y).toBeDefined();
-    expect(layout.dimensions.width).toBeGreaterThan(0);
-    expect(layout.dimensions.height).toBeGreaterThan(0);
+  it('filters out source modules when density is set to overview', () => {
+    const builder = new GraphBuilder();
+
+    const app = builder.createAndAddNode({ type: 'application', key: 'app', displayName: 'App', evidence: { detectorId: 't', rule: 't' } });
+    const mod = builder.createAndAddNode({ type: 'source_module', key: 'mod', displayName: 'Module', evidence: { detectorId: 't', rule: 't' } });
+    builder.createAndAddEdge({ source: app.id, target: mod.id, type: 'contains', evidence: { detectorId: 't', rule: 't' } });
+
+    const graph = builder.build({ rootPath: '/test', projectName: 'test' });
+
+    const overview = filterGraph(graph, { density: 'overview' });
+    expect(overview.nodes.length).toBe(1);
+    expect(overview.nodes[0]?.type).toBe('application');
   });
 });

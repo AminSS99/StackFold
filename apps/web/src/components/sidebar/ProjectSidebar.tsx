@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   FolderGit2,
   RefreshCw,
   Filter,
   CheckSquare,
   Square,
-  Sparkles,
   Layers,
   Globe,
   Database,
@@ -15,13 +14,13 @@ import {
   KeyRound,
   FileCode,
   Component as ComponentIcon,
-  ChevronRight,
   Clock,
   FileText,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
-import type { NodeType } from '@stackfold/graph';
+import type { NodeType, DensityLevel } from '@stackfold/graph';
 
 const NODE_TYPE_ITEMS: Array<{ type: NodeType; label: string; icon: React.ReactNode; color: string }> = [
   { type: 'application', label: 'Applications', icon: <Layers className="w-3.5 h-3.5" />, color: 'text-purple-400' },
@@ -38,19 +37,25 @@ export function ProjectSidebar() {
   const isLoading = useStackfoldStore(s => s.isLoading);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
   const scanStats = useStackfoldStore(s => s.scanStats);
+  const currentRootPath = useStackfoldStore(s => s.currentRootPath);
   const enabledNodeTypes = useStackfoldStore(s => s.enabledNodeTypes);
   const toggleNodeType = useStackfoldStore(s => s.toggleNodeType);
   const resetNodeTypeFilters = useStackfoldStore(s => s.resetNodeTypeFilters);
+  const setOnboardingModalOpen = useStackfoldStore(s => s.setOnboardingModalOpen);
+  const density = useStackfoldStore(s => s.density);
+  const setDensity = useStackfoldStore(s => s.setDensity);
 
-  const [selectedFixture, setSelectedFixture] = useState('sample-ecommerce-app');
-  const [customPath, setCustomPath] = useState('');
-  const [useCustomPath, setUseCustomPath] = useState(false);
+  if (!rawGraph) {
+    return null;
+  }
 
-  const handleScan = () => {
-    if (useCustomPath && customPath.trim()) {
-      scan({ rootPath: customPath.trim() });
+  const handleRescan = () => {
+    if (!currentRootPath) return;
+    if (currentRootPath.startsWith('[Fixture] ')) {
+      const fixtureId = currentRootPath.replace('[Fixture] ', '').trim();
+      scan({ fixture: fixtureId, useCache: false });
     } else {
-      scan({ fixture: selectedFixture });
+      scan({ rootPath: currentRootPath, useCache: false });
     }
   };
 
@@ -58,104 +63,99 @@ export function ProjectSidebar() {
 
   return (
     <aside className="w-72 bg-[#0c0e16] border-r border-[#1c2233] flex flex-col h-full select-none text-xs">
-      {/* Repository Picker Header */}
+      {/* Current Project Header */}
       <div className="p-4 border-b border-[#1c2233] space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-slate-200 flex items-center gap-1.5 text-[13px]">
-            <FolderGit2 className="w-4 h-4 text-indigo-400" />
-            Project Onboarding
+          <span className="font-semibold text-slate-200 flex items-center gap-1.5 text-[13px] truncate">
+            <FolderGit2 className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="truncate">{rawGraph.metadata.projectName}</span>
           </span>
-        </div>
-
-        {/* Fixture vs Custom Selector */}
-        <div className="space-y-2">
-          {!useCustomPath ? (
-            <div>
-              <label className="text-[11px] text-slate-400 mb-1 block">Target Repository</label>
-              <select
-                value={selectedFixture}
-                onChange={e => setSelectedFixture(e.target.value)}
-                className="w-full bg-[#141724] border border-[#222738] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-              >
-                <option value="sample-ecommerce-app">Sample E-Commerce Store (Next.js + Prisma)</option>
-                <option value="stackfold-self">Stackfold Monorepo (Self Scan)</option>
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="text-[11px] text-slate-400 mb-1 block">Local Directory Path</label>
-              <input
-                type="text"
-                value={customPath}
-                onChange={e => setCustomPath(e.target.value)}
-                placeholder="/absolute/path/to/project"
-                className="w-full bg-[#141724] border border-[#222738] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between text-[11px]">
-            <button
-              onClick={() => setUseCustomPath(!useCustomPath)}
-              className="text-indigo-400 hover:text-indigo-300 underline"
-            >
-              {useCustomPath ? '← Switch to Fixtures' : 'Enter Custom Local Path →'}
-            </button>
-          </div>
-
           <button
-            onClick={handleScan}
-            disabled={isLoading}
-            className="w-full mt-2 py-2 px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 rounded-lg text-white font-medium flex items-center justify-center gap-2 shadow-md transition-colors"
+            onClick={() => setOnboardingModalOpen(true)}
+            className="text-[11px] text-indigo-400 hover:text-indigo-300 underline shrink-0"
           >
-            <RefreshCw className={clsx('w-3.5 h-3.5', isLoading && 'animate-spin')} />
-            <span>{isLoading ? 'Scanning...' : 'Scan Repository'}</span>
+            Change
           </button>
         </div>
+
+        <div className="text-[10px] text-slate-500 font-mono truncate">
+          {currentRootPath}
+        </div>
+
+        <button
+          onClick={handleRescan}
+          disabled={isLoading}
+          className="w-full py-2 px-3 bg-[#181d2f] hover:bg-[#22293e] active:bg-[#121522] border border-[#2d354e] rounded-xl text-slate-200 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+        >
+          <RefreshCw className={clsx('w-3.5 h-3.5 text-indigo-400', isLoading && 'animate-spin')} />
+          <span>{isLoading ? 'Scanning...' : 'Rescan Project'}</span>
+        </button>
       </div>
 
-      {/* Project Diagnostics & Stats */}
-      {rawGraph && (
-        <div className="p-4 border-b border-[#1c2233] space-y-2 bg-[#0e111b]/50">
-          <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
-            Project Overview
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="p-2 rounded bg-[#141724] border border-[#222738]">
-              <div className="text-slate-500 flex items-center gap-1">
-                <FileText className="w-3 h-3" /> Files
-              </div>
-              <div className="text-slate-100 font-bold text-sm mt-0.5">
-                {scanStats?.scannedFilesCount || 0}
-              </div>
-            </div>
-            <div className="p-2 rounded bg-[#141724] border border-[#222738]">
-              <div className="text-slate-500 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Scan Time
-              </div>
-              <div className="text-slate-100 font-bold text-sm mt-0.5">
-                {scanStats?.durationMs || 0} ms
-              </div>
-            </div>
-          </div>
-
-          {rawGraph.metadata.frameworks.length > 0 && (
-            <div className="pt-1">
-              <div className="text-[10px] text-slate-500 mb-1">Discovered Technologies:</div>
-              <div className="flex flex-wrap gap-1">
-                {rawGraph.metadata.frameworks.map(fw => (
-                  <span
-                    key={fw}
-                    className="px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-800/40 text-indigo-300 text-[10px]"
-                  >
-                    {fw}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Project Overview Stats */}
+      <div className="p-4 border-b border-[#1c2233] space-y-2 bg-[#0e111b]/50">
+        <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+          Scan Diagnostics
         </div>
-      )}
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="p-2 rounded bg-[#141724] border border-[#222738]">
+            <div className="text-slate-500 flex items-center gap-1">
+              <FileText className="w-3 h-3" /> Files
+            </div>
+            <div className="text-slate-100 font-bold text-sm mt-0.5">
+              {scanStats?.scannedFilesCount || 0}
+            </div>
+          </div>
+          <div className="p-2 rounded bg-[#141724] border border-[#222738]">
+            <div className="text-slate-500 flex items-center gap-1">
+              <Clock className="w-3 h-3" /> Duration
+            </div>
+            <div className="text-slate-100 font-bold text-sm mt-0.5">
+              {scanStats?.durationMs || 0} ms
+            </div>
+          </div>
+        </div>
+
+        {rawGraph.metadata.frameworks.length > 0 && (
+          <div className="pt-1">
+            <div className="text-[10px] text-slate-500 mb-1">Detected Frameworks:</div>
+            <div className="flex flex-wrap gap-1">
+              {rawGraph.metadata.frameworks.map(fw => (
+                <span
+                  key={fw}
+                  className="px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-800/40 text-indigo-300 text-[10px]"
+                >
+                  {fw}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Detail Density Filter */}
+      <div className="p-4 border-b border-[#1c2233] space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+            Graph Density
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1 bg-[#121522] p-1 rounded-xl border border-[#222738]">
+          {(['overview', 'standard', 'detailed'] as DensityLevel[]).map(d => (
+            <button
+              key={d}
+              onClick={() => setDensity(d)}
+              className={clsx(
+                'py-1 text-center rounded-lg text-[10px] capitalize font-medium transition-colors',
+                density === d ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+              )}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Node Type Filters */}
       <div className="p-4 flex-1 overflow-y-auto space-y-2">

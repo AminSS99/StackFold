@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a reproducible bug, scanning failure, or UI issue in Stackfold.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue with Stackfold! Please make sure your issue hasn't already been reported.
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Operating System / Platform
+      description: What platform did you observe this bug on?
+      options:
+        - macOS Desktop (.app / .dmg)
+        - Web Browser (Next.js dev / web build)
+        - Windows (via dev / WSL)
+        - Linux (via dev)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: What happened? What did you expect to happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the behavior.
+      placeholder: |
+        1. Open Stackfold Desktop
+        2. Select repository at '...'
+        3. Click 'Scan'
+        4. Observe error ...
+    validations:
+      required: true
+  - type: textarea
+    id: repository_type
+    attributes:
+      label: Target Repository Characteristics
+      description: Frameworks, package manager, and structure of the repository being scanned (do not include private code or secrets).
+      placeholder: Next.js 14 App Router, Prisma ORM, pnpm monorepo with 3 workspaces.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Diagnostics or Terminal Logs
+      description: Relevant output from the terminal or scan diagnostics drawer (ensure secrets are redacted).
+      render: shell

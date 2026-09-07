@@ -1,0 +1,2 @@
+# Stackfold v0.1.0 Release Checksums (SHA256)
+b7e54cc819ba0affee5615423b9bae7ea9cb6f234c025360fb3db7b82b9b5422  Stackfold_0.1.0_aarch64.dmg

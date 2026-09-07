@@ -9,7 +9,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && pnpm bundle:sidecar",
+    "bundle:sidecar": "esbuild src/cli/sidecar.ts --bundle --platform=node --target=node20 --outfile=dist/sidecar.cjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
+    "esbuild": "^0.25.0",
     "vitest": "^3.0.7"
   }
 }

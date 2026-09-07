@@ -1,0 +1,10 @@
+{
+  "name": "sample-monorepo-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

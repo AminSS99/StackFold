@@ -1,0 +1,43 @@
+name: Feature Request / Framework Support
+description: Suggest an idea or request support for a new framework, ORM, or architectural analyzer.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Stackfold welcomes proposals for new AST detectors, framework integrations, and visual intelligence features.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Scanner / AST Detector (New Framework, ORM, or Service)
+        - Graph Visualizer / React Flow View
+        - Desktop Native Feature
+        - Performance & Scaling (Large Codebases)
+        - Change-Impact Traversal
+        - Documentation / Developer Experience
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Use Case
+      description: Is your feature request related to a problem or architectural pattern?
+      placeholder: I'm always frustrated when scanning codebases using Drizzle ORM because ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution or new detector you would like to see.
+      placeholder: Add a detector in packages/scanner that parses `drizzle/schema.ts` and maps `pgTable` definitions ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { AlertOctagon, AlertTriangle, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
+import { AlertOctagon, AlertTriangle, CheckCircle2, ShieldAlert, ArrowRight, Target } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { GraphNode } from '@stackfold/graph';
 import { calculateChangeImpact } from '@stackfold/graph';
@@ -45,6 +45,9 @@ const SEVERITY_CONFIG = {
 export function ImpactTab({ node }: ImpactTabProps) {
   const rawGraph = useStackfoldStore(s => s.rawGraph);
   const selectNode = useStackfoldStore(s => s.selectNode);
+  const focusSubgraph = useStackfoldStore(s => s.focusSubgraph);
+  const focusedNodeId = useStackfoldStore(s => s.focusedNodeId);
+  const resetFocus = useStackfoldStore(s => s.resetFocus);
 
   const impact = useMemo(() => {
     if (!rawGraph) return null;
@@ -55,10 +58,20 @@ export function ImpactTab({ node }: ImpactTabProps) {
     return <div className="text-xs text-slate-500 italic">Computing impact...</div>;
   }
 
+  const isCurrentlyFocused = focusedNodeId === node.id;
   const sevConfig = SEVERITY_CONFIG[impact.severity] || SEVERITY_CONFIG.LOW;
 
   return (
     <div className="space-y-4 text-xs">
+      {/* Isolate Blast Radius */}
+      <button
+        onClick={() => (isCurrentlyFocused ? resetFocus() : focusSubgraph(node.id))}
+        className="w-full py-2 px-3 bg-[#181d2f] hover:bg-[#22293e] border border-[#2d354e] rounded-xl text-slate-200 font-medium flex items-center justify-center gap-2 transition-colors text-xs shadow-sm"
+      >
+        <Target className="w-3.5 h-3.5 text-rose-400" />
+        <span>{isCurrentlyFocused ? 'Reset Focus (Show All)' : 'Isolate Blast Radius on Canvas'}</span>
+      </button>
+
       {/* Blast Radius Score Card */}
       <div className={clsx('p-3 rounded-xl border space-y-2', sevConfig.bg, sevConfig.border)}>
         <div className="flex items-center justify-between">

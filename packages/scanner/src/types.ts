@@ -1,4 +1,5 @@
 import type { ProjectGraph, ScanDiagnostic, GraphBuilder } from '@stackfold/graph';
+import type { ScanProgressCallback } from './pipeline/stages';
 
 export interface ScanOptions {
   rootPath: string;
@@ -6,13 +7,16 @@ export interface ScanOptions {
   ignorePatterns?: string[];
   maxFiles?: number;
   verbose?: boolean;
+  onProgress?: ScanProgressCallback;
+  signal?: AbortSignal;
+  useCache?: boolean;
 }
 
 export interface ScanContext {
   rootPath: string;
   projectName: string;
   builder: GraphBuilder;
-  fileList: string[]; // Relative paths
+  fileList: string[];
   packageJsonFiles: string[];
   tsJsFiles: string[];
   prismaFiles: string[];
@@ -20,6 +24,7 @@ export interface ScanContext {
   frameworks: Set<string>;
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'unknown';
   diagnostics: ScanDiagnostic[];
+  signal?: AbortSignal;
 }
 
 export interface DetectorInterface {
@@ -33,4 +38,5 @@ export interface ScanResult {
   durationMs: number;
   scannedFilesCount: number;
   diagnostics: ScanDiagnostic[];
+  fromCache?: boolean;
 }

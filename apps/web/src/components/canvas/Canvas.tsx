@@ -11,6 +11,7 @@ import {
   type Node,
   type Edge,
   BackgroundVariant,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -22,6 +23,9 @@ import { ServiceNode } from './nodes/ServiceNode';
 import { EnvVarNode } from './nodes/EnvVarNode';
 import { ModuleNode, ComponentNode } from './nodes/ModuleNode';
 import { CustomEdge } from './edges/CustomEdge';
+import { FocusBanner } from './FocusBanner';
+import { EmptyWorkspace } from '../onboarding/EmptyWorkspace';
+import { X, RefreshCw } from 'lucide-react';
 
 const NODE_TYPES = {
   repository: AppNode,
@@ -42,20 +46,42 @@ const EDGE_TYPES = {
 };
 
 export function Canvas() {
+  const rawGraph = useStackfoldStore(s => s.rawGraph);
   const layoutedGraph = useStackfoldStore(s => s.layoutedGraph);
+  const selectedNodeId = useStackfoldStore(s => s.selectedNodeId);
   const selectNode = useStackfoldStore(s => s.selectNode);
-  const activeView = useStackfoldStore(s => s.activeView);
+  const focusSubgraph = useStackfoldStore(s => s.focusSubgraph);
   const isLoading = useStackfoldStore(s => s.isLoading);
+  const cancelScan = useStackfoldStore(s => s.cancelScan);
+  const scanProgressMessage = useStackfoldStore(s => s.scanProgressMessage);
+
+  // Compute connected nodes for selection dimming
+  const connectedNodeIds = useMemo(() => {
+    if (!selectedNodeId || !rawGraph) return null;
+    const connected = new Set<string>([selectedNodeId]);
+    for (const edge of rawGraph.edges) {
+      if (edge.source === selectedNodeId) connected.add(edge.target);
+      if (edge.target === selectedNodeId) connected.add(edge.source);
+    }
+    return connected;
+  }, [selectedNodeId, rawGraph]);
 
   const initialNodes = useMemo<Node[]>(() => {
     if (!layoutedGraph) return [];
-    return layoutedGraph.nodes.map(n => ({
-      id: n.id,
-      type: n.type,
-      position: n.position,
-      data: n as unknown as Record<string, unknown>,
-    }));
-  }, [layoutedGraph]);
+    return layoutedGraph.nodes.map(n => {
+      const isDimmed = connectedNodeIds !== null && !connectedNodeIds.has(n.id);
+      return {
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: n as unknown as Record<string, unknown>,
+        style: {
+          opacity: isDimmed ? 0.25 : 1,
+          transition: 'opacity 0.2s ease',
+        },
+      };
+    });
+  }, [layoutedGraph, connectedNodeIds]);
 
   const initialEdges = useMemo<Edge[]>(() => {
     if (!layoutedGraph) return [];
@@ -76,23 +102,34 @@ export function Canvas() {
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
+  if (!rawGraph && !isLoading) {
+    return <EmptyWorkspace />;
+  }
+
   return (
     <div className="w-full h-full relative bg-[#090a0f] overflow-hidden">
-      {isLoading && (
-        <div className="absolute inset-0 bg-[#090a0f]/80 z-20 flex flex-col items-center justify-center gap-3 backdrop-blur-sm">
-          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm font-medium text-slate-300">Scanning repository & computing layout...</div>
-        </div>
-      )}
+      {/* Active Focus Subgraph Banner */}
+      <FocusBanner />
 
-      {nodes.length === 0 && !isLoading && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6">
-          <div className="max-w-md p-8 rounded-2xl bg-[#111420] border border-[#222738] shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">No matching nodes in this view</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Try switching views, resetting your filters, or selecting another repository in the left sidebar.
-            </p>
+      {/* Loading & Cancellation Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-[#090a0f]/85 z-30 flex flex-col items-center justify-center gap-4 backdrop-blur-sm select-none">
+          <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="text-center space-y-1">
+            <div className="text-sm font-semibold text-slate-100">
+              {scanProgressMessage || 'Scanning repository & computing layout...'}
+            </div>
+            <div className="text-xs text-slate-400">
+              Static analysis in progress (Zero secrets collected)
+            </div>
           </div>
+          <button
+            onClick={cancelScan}
+            className="mt-2 px-3 py-1.5 rounded-lg bg-[#181d2f] hover:bg-[#22293e] border border-[#2d354e] text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Cancel Scan</span>
+          </button>
         </div>
       )}
 
@@ -104,6 +141,7 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={(_, node) => selectNode(node.id)}
+        onNodeDoubleClick={(_, node) => focusSubgraph(node.id)}
         onPaneClick={() => selectNode(null)}
         fitView
         minZoom={0.1}

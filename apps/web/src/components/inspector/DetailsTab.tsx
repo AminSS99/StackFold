@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Copy, ExternalLink, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Copy, ExternalLink, ArrowRight, ArrowLeft, Target, Code2 } from 'lucide-react';
 import type { GraphNode, GraphEdge } from '@stackfold/graph';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
+import type { PreferredEditor } from '@stackfold/platform';
 
 interface DetailsTabProps {
   node: GraphNode;
@@ -11,9 +12,21 @@ interface DetailsTabProps {
   outgoingEdges: GraphEdge[];
 }
 
+const EDITORS: Array<{ id: PreferredEditor; label: string }> = [
+  { id: 'vscode', label: 'VS Code' },
+  { id: 'cursor', label: 'Cursor' },
+  { id: 'webstorm', label: 'WebStorm' },
+];
+
 export function DetailsTab({ node, incomingEdges, outgoingEdges }: DetailsTabProps) {
   const selectNode = useStackfoldStore(s => s.selectNode);
+  const focusSubgraph = useStackfoldStore(s => s.focusSubgraph);
+  const focusedNodeId = useStackfoldStore(s => s.focusedNodeId);
+  const resetFocus = useStackfoldStore(s => s.resetFocus);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
+  const openSelectedFileInEditor = useStackfoldStore(s => s.openSelectedFileInEditor);
+  const preferredEditor = useStackfoldStore(s => s.preferredEditor);
+  const setPreferredEditor = useStackfoldStore(s => s.setPreferredEditor);
 
   const handleCopyPath = () => {
     if (node.filePath) {
@@ -21,14 +34,47 @@ export function DetailsTab({ node, incomingEdges, outgoingEdges }: DetailsTabPro
     }
   };
 
+  const handleOpenFile = () => {
+    if (node.filePath) {
+      openSelectedFileInEditor(node.filePath);
+    }
+  };
+
+  const isCurrentlyFocused = focusedNodeId === node.id;
   const nodeMap = new Map(rawGraph?.nodes.map(n => [n.id, n]));
 
   return (
-    <div className="space-y-4">
-      {/* File Location */}
+    <div className="space-y-4 text-xs select-none">
+      {/* Focus / Isolate Subgraph Action */}
+      <button
+        onClick={() => (isCurrentlyFocused ? resetFocus() : focusSubgraph(node.id))}
+        className="w-full py-2 px-3 bg-[#181d2f] hover:bg-[#22293e] border border-[#2d354e] rounded-xl text-slate-200 font-medium flex items-center justify-center gap-2 transition-colors text-xs shadow-sm"
+      >
+        <Target className="w-3.5 h-3.5 text-indigo-400" />
+        <span>{isCurrentlyFocused ? 'Reset Focus (Show All)' : 'Isolate Subgraph on Canvas'}</span>
+      </button>
+
+      {/* File Location & Editor Deep Link */}
       {node.filePath && (
         <div className="p-3 rounded-xl bg-[#141724] border border-[#222738] space-y-2">
-          <div className="text-[11px] text-slate-400 font-medium">Source File</div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-medium">Source File</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-slate-500">Editor:</span>
+              <select
+                value={preferredEditor}
+                onChange={e => setPreferredEditor(e.target.value as PreferredEditor)}
+                className="bg-[#0c0e16] border border-[#222738] text-[10px] text-slate-300 rounded px-1.5 py-0.5 focus:outline-none"
+              >
+                {EDITORS.map(ed => (
+                  <option key={ed.id} value={ed.id}>
+                    {ed.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between gap-2 bg-[#0c0e16] p-2 rounded-lg border border-[#1b2032]">
             <span className="font-mono text-xs text-slate-300 truncate">{node.filePath}</span>
             <div className="flex items-center gap-1 shrink-0">
@@ -39,15 +85,13 @@ export function DetailsTab({ node, incomingEdges, outgoingEdges }: DetailsTabPro
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
-              {rawGraph?.metadata.rootPath && (
-                <a
-                  href={`vscode://file/${rawGraph.metadata.rootPath}/${node.filePath}`}
-                  title="Open in VS Code"
-                  className="p-1 text-slate-400 hover:text-indigo-300 rounded hover:bg-[#1f253a]"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              )}
+              <button
+                onClick={handleOpenFile}
+                title={`Open in ${preferredEditor.toUpperCase()}`}
+                className="p-1 text-slate-400 hover:text-indigo-300 rounded hover:bg-[#1f253a] flex items-center gap-1"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>

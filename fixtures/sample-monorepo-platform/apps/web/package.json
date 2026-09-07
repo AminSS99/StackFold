@@ -1,0 +1,11 @@
+{
+  "name": "@platform/web",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@platform/db": "workspace:*",
+    "@platform/utils": "workspace:*",
+    "next": "^14.2.15",
+    "react": "^18.3.1"
+  }
+}
