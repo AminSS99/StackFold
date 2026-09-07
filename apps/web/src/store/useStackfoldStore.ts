@@ -268,7 +268,12 @@ export const useStackfoldStore = create<StackfoldState>((set, get) => ({
       get().recomputeLayout();
     } catch (err: unknown) {
       if (scanSequence !== currentScanSequence) return;
-      const msg = err instanceof Error ? err.message : 'Scan failed';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : (err as { message?: string })?.message || (err ? String(err) : 'Scan failed');
       if (msg === 'The user aborted a request.' || msg === 'Scan aborted by user') {
         set({ isLoading: false, scanProgressMessage: null });
       } else {

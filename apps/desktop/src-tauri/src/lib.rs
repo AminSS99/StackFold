@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
@@ -117,9 +117,110 @@ pub fn get_stackfold_home_dir() -> PathBuf {
     }
 }
 
+pub fn find_node_binary() -> Result<PathBuf, String> {
+    // 1. Check if node is found directly in common binary paths
+    let candidates = [
+        "/opt/homebrew/bin/node",
+        "/usr/local/bin/node",
+        "/usr/bin/node",
+    ];
+    for c in &candidates {
+        let p = PathBuf::from(c);
+        if p.exists() && p.is_file() {
+            return Ok(p);
+        }
+    }
+
+    // 2. Check user home directories (.local/bin, .nvm, .fnm, .volta, .asdf, pnpm)
+    if let Some(home) = dirs::home_dir() {
+        let home_candidates = [
+            home.join(".local/bin/node"),
+            home.join(".nvm/current/bin/node"),
+            home.join(".volta/bin/node"),
+            home.join(".asdf/shims/node"),
+            home.join(".local/share/pnpm/node"),
+        ];
+        for p in &home_candidates {
+            if p.exists() && p.is_file() {
+                return Ok(p.clone());
+            }
+        }
+
+        // Check ~/.nvm/versions/node/*/bin/node
+        let nvm_dir = home.join(".nvm/versions/node");
+        if nvm_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(nvm_dir) {
+                for entry in entries.flatten() {
+                    let node_path = entry.path().join("bin/node");
+                    if node_path.exists() && node_path.is_file() {
+                        return Ok(node_path);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. On Unix (macOS), query login shell which has the user's PATH configured
+    #[cfg(unix)]
+    {
+        if let Ok(output) = Command::new("/bin/zsh")
+            .args(["-l", "-c", "which node"])
+            .output()
+        {
+            if output.status.success() {
+                let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path_str.is_empty() {
+                    let p = PathBuf::from(&path_str);
+                    if p.exists() && p.is_file() {
+                        return Ok(p);
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Check system PATH environment variable
+    if let Ok(path_var) = std::env::var("PATH") {
+        for dir in std::env::split_paths(&path_var) {
+            let candidate = dir.join(if cfg!(windows) { "node.exe" } else { "node" });
+            if candidate.exists() && candidate.is_file() {
+                return Ok(candidate);
+            }
+        }
+    }
+
+    Err("Node.js runtime not found. Please install Node.js (e.g. from nodejs.org or brew install node).".to_string())
+}
+
 pub fn find_scanner_sidecar() -> Result<PathBuf, String> {
+    // 1. Check relative to current_exe in macOS app bundle
+    // exe: /Applications/Stackfold.app/Contents/MacOS/stackfold-desktop
+    // resources: /Applications/Stackfold.app/Contents/Resources/sidecar.cjs
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(macos_dir) = exe.parent() {
+            if let Some(contents_dir) = macos_dir.parent() {
+                let bundle_candidates = [
+                    contents_dir.join("Resources/sidecar.cjs"),
+                    contents_dir.join("Resources/_up_/_up_/_up_/packages/scanner/dist/sidecar.cjs"),
+                    contents_dir.join("Resources/_up_/packages/scanner/dist/sidecar.cjs"),
+                    contents_dir.join("Resources/packages/scanner/dist/sidecar.cjs"),
+                ];
+                for c in &bundle_candidates {
+                    if c.exists() {
+                        if let Ok(canon) = c.canonicalize() {
+                            return Ok(canon);
+                        }
+                        return Ok(c.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Dev / monorepo candidates
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let candidates = vec![
+        manifest_dir.join("../../../packages/scanner/dist/sidecar.cjs"),
         manifest_dir.join("../../packages/scanner/dist/sidecar.cjs"),
         manifest_dir.join("../scanner/dist/sidecar.cjs"),
         manifest_dir.join("sidecar/sidecar.cjs"),
@@ -356,14 +457,16 @@ pub mod commands {
         })
         .to_string();
 
-        let mut child = Command::new("node")
+        let node_bin = find_node_binary()?;
+
+        let mut child = Command::new(&node_bin)
             .arg(&sidecar_path)
             .arg("scan")
             .arg(&payload_json)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| format!("Failed to spawn scanner sidecar: {}", e))?;
+            .map_err(|e| format!("Failed to spawn scanner sidecar with Node binary '{:?}': {}", node_bin, e))?;
 
         let pid = child.id();
         if let Some(scans) = app.try_state::<Arc<ActiveScans>>() {
@@ -419,7 +522,7 @@ pub mod commands {
             }
         }
 
-        let _ = child.wait();
+        let exit_status = child.wait();
 
         if let Some(scans) = app.try_state::<Arc<ActiveScans>>() {
             let mut procs = scans.processes.lock().unwrap();
@@ -430,10 +533,28 @@ pub mod commands {
             return Err(err);
         }
 
-        match final_result {
-            Some(res) => Ok(res),
-            None => Err("Scanner terminated without returning a result".to_string()),
+        if let Some(res) = final_result {
+            return Ok(res);
         }
+
+        let mut stderr_msg = String::new();
+        if let Some(mut err_stream) = child.stderr.take() {
+            let _ = err_stream.read_to_string(&mut stderr_msg);
+        }
+
+        let detail = if !stderr_msg.trim().is_empty() {
+            format!(": {}", stderr_msg.trim())
+        } else if let Ok(status) = exit_status {
+            if !status.success() {
+                format!(" (exit code: {:?})", status.code())
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        Err(format!("Scanner process terminated without returning a result{}", detail))
     }
 
     #[tauri::command]
@@ -734,5 +855,21 @@ mod tests {
 
         let remove_res = commands::remove_recent_project("/tmp/test-proj".to_string());
         assert!(remove_res.is_ok());
+    }
+
+    #[test]
+    fn test_find_node_binary() {
+        let node = find_node_binary();
+        assert!(node.is_ok(), "Node binary should be found on development/host system: {:?}", node.err());
+        let p = node.unwrap();
+        assert!(p.exists(), "Resolved node path must exist: {:?}", p);
+    }
+
+    #[test]
+    fn test_find_scanner_sidecar() {
+        let sidecar = find_scanner_sidecar();
+        assert!(sidecar.is_ok(), "Sidecar must be found: {:?}", sidecar.err());
+        let p = sidecar.unwrap();
+        assert!(p.exists(), "Resolved sidecar path must exist: {:?}", p);
     }
 }
