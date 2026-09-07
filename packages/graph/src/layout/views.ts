@@ -22,6 +22,8 @@ export const VIEW_DEFINITIONS: Record<GraphViewType, ViewFilterDefinition> = {
       'database_model',
       'external_service',
       'environment_variable',
+      'source_module',
+      'component',
     ],
     description: 'System-level architecture showing applications, services, APIs, databases, and configuration.',
   },
