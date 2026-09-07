@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Layers,
   Workflow,
@@ -87,6 +88,16 @@ export function TopBar() {
           <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
           <span>{rawGraph ? 'Switch Project' : 'Open Project'}</span>
         </button>
+
+        {/* Download Desktop App Link */}
+        <Link
+          href="/download"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#141724] border border-[#222738] hover:border-amber-500/50 text-slate-300 hover:text-white text-xs transition-colors"
+          title="Download Desktop Application"
+        >
+          <Download className="w-3.5 h-3.5 text-amber-400" />
+          <span>Desktop App</span>
+        </Link>
 
         {rawGraph && (
           <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-[#222738] text-xs text-slate-400">

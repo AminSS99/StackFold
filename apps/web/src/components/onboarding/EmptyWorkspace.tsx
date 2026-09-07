@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   FolderGit2,
   Package,
@@ -12,6 +13,7 @@ import {
   Activity,
   Database,
   Globe,
+  Download,
 } from 'lucide-react';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
 
@@ -148,6 +150,17 @@ export function EmptyWorkspace() {
               Secret keys and private env values are never stored.
             </p>
           </div>
+        </div>
+
+        {/* Download Banner */}
+        <div className="pt-2 flex items-center justify-center">
+          <Link
+            href="/download"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#121522] hover:bg-[#181d2f] border border-[#232a3f] hover:border-amber-500/50 text-xs text-slate-300 hover:text-amber-300 transition-colors shadow-lg group"
+          >
+            <Download className="w-4 h-4 text-amber-400 group-hover:translate-y-0.5 transition-transform" />
+            <span>Prefer a native desktop app? <strong>Download Stackfold for macOS (.dmg) &rarr;</strong></span>
+          </Link>
         </div>
       </div>
     </div>
