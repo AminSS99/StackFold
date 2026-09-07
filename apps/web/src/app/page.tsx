@@ -9,6 +9,8 @@ import { Inspector } from '@/components/inspector/Inspector';
 import { CommandPalette } from '@/components/search/CommandPalette';
 import { DiagnosticsDrawer } from '@/components/diagnostics/DiagnosticsDrawer';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
+import { ExportModal } from '@/components/export/ExportModal';
+import { ArchitectureAssistantModal } from '@/components/ai/ArchitectureAssistantModal';
 import type { GraphViewType } from '@stackfold/graph';
 
 const VIEW_MAP: Record<string, GraphViewType> = {
@@ -27,6 +29,10 @@ export default function StackfoldPage() {
   const setDiagnosticsDrawerOpen = useStackfoldStore(s => s.setDiagnosticsDrawerOpen);
   const isCommandPaletteOpen = useStackfoldStore(s => s.isCommandPaletteOpen);
   const setCommandPaletteOpen = useStackfoldStore(s => s.setCommandPaletteOpen);
+  const isExportModalOpen = useStackfoldStore(s => s.isExportModalOpen);
+  const setExportModalOpen = useStackfoldStore(s => s.setExportModalOpen);
+  const isAiAssistantOpen = useStackfoldStore(s => s.isAiAssistantOpen);
+  const setAiAssistantOpen = useStackfoldStore(s => s.setAiAssistantOpen);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
 
   useEffect(() => {
@@ -56,6 +62,8 @@ export default function StackfoldPage() {
         resetFocus();
         setDiagnosticsDrawerOpen(false);
         setCommandPaletteOpen(false);
+        setExportModalOpen(false);
+        setAiAssistantOpen(false);
         return;
       }
 
@@ -76,6 +84,8 @@ export default function StackfoldPage() {
     isDiagnosticsDrawerOpen,
     setDiagnosticsDrawerOpen,
     setCommandPaletteOpen,
+    setExportModalOpen,
+    setAiAssistantOpen,
     selectNode,
     resetFocus,
     setActiveView,
@@ -104,6 +114,8 @@ export default function StackfoldPage() {
       <CommandPalette />
       <DiagnosticsDrawer />
       <OnboardingModal />
+      <ExportModal isOpen={isExportModalOpen} onClose={() => setExportModalOpen(false)} />
+      <ArchitectureAssistantModal isOpen={isAiAssistantOpen} onClose={() => setAiAssistantOpen(false)} />
     </div>
   );
 }

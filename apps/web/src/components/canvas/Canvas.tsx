@@ -25,7 +25,7 @@ import { ModuleNode, ComponentNode } from './nodes/ModuleNode';
 import { CustomEdge } from './edges/CustomEdge';
 import { FocusBanner } from './FocusBanner';
 import { EmptyWorkspace } from '../onboarding/EmptyWorkspace';
-import { X, RefreshCw } from 'lucide-react';
+import { X, RefreshCw, Sparkles } from 'lucide-react';
 
 const NODE_TYPES = {
   repository: AppNode,
@@ -54,6 +54,8 @@ export function Canvas() {
   const isLoading = useStackfoldStore(s => s.isLoading);
   const cancelScan = useStackfoldStore(s => s.cancelScan);
   const scanProgressMessage = useStackfoldStore(s => s.scanProgressMessage);
+  const activeView = useStackfoldStore(s => s.activeView);
+  const setActiveView = useStackfoldStore(s => s.setActiveView);
 
   // Compute connected nodes for selection dimming
   const connectedNodeIds = useMemo(() => {
@@ -130,6 +132,53 @@ export function Canvas() {
             <X className="w-3.5 h-3.5" />
             <span>Cancel Scan</span>
           </button>
+        </div>
+      )}
+
+      {/* Contextual Empty State for current View */}
+      {nodes.length === 0 && !isLoading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none select-none">
+          <div className="p-6 rounded-2xl bg-[#101320]/95 border border-[#22293e] backdrop-blur-md max-w-md text-center space-y-3 pointer-events-auto shadow-2xl">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-100">
+                {activeView === 'api_flow' && 'No API Routes in this Project'}
+                {activeView === 'database' && 'No Database Models Detected'}
+                {activeView === 'dependencies' && 'No Dependencies in Current View'}
+                {activeView === 'architecture' && 'No Entities in Current Filter'}
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {activeView === 'api_flow' &&
+                  'This project does not expose backend HTTP/REST routes (appears to be a client-side SPA or utility library).'}
+                {activeView === 'database' &&
+                  'No Prisma schema or relational database models were found in the codebase.'}
+                {activeView === 'dependencies' &&
+                  'No package dependencies match the current filter criteria.'}
+                {activeView === 'architecture' &&
+                  'Try adjusting your graph density or node filters in the sidebar.'}
+              </p>
+            </div>
+            <div className="pt-2 flex items-center justify-center gap-2">
+              {activeView !== 'architecture' && (
+                <button
+                  onClick={() => setActiveView('architecture')}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-md"
+                >
+                  Switch to Architecture
+                </button>
+              )}
+              {activeView !== 'dependencies' && (
+                <button
+                  onClick={() => setActiveView('dependencies')}
+                  className="px-4 py-2 rounded-xl bg-[#171c2b] hover:bg-[#20273c] border border-[#2b3550] text-slate-200 text-xs font-semibold transition-colors"
+                >
+                  View Dependencies
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

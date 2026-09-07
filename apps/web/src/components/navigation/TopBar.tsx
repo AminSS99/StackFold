@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
   Layers,
@@ -15,6 +15,7 @@ import {
   Compass,
   FolderGit2,
   SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
@@ -38,23 +39,22 @@ export function TopBar() {
   const isDiagnosticsDrawerOpen = useStackfoldStore(s => s.isDiagnosticsDrawerOpen);
   const setDiagnosticsDrawerOpen = useStackfoldStore(s => s.setDiagnosticsDrawerOpen);
   const setOnboardingModalOpen = useStackfoldStore(s => s.setOnboardingModalOpen);
+  const setExportModalOpen = useStackfoldStore(s => s.setExportModalOpen);
+  const setAiAssistantOpen = useStackfoldStore(s => s.setAiAssistantOpen);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
   const scanStats = useStackfoldStore(s => s.scanStats);
 
   const diagnosticsCount = rawGraph?.diagnostics?.length || 0;
 
-  const handleExportJson = () => {
-    if (!rawGraph) return;
-    const blob = new Blob([JSON.stringify(rawGraph, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stackfold-graph-${rawGraph.metadata.projectName || 'project'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const viewCounts = useMemo(() => {
+    if (!rawGraph) return { architecture: 0, api_flow: 0, database: 0, dependencies: 0 };
+    return {
+      architecture: rawGraph.nodes.length,
+      api_flow: rawGraph.nodes.filter(n => n.type === 'api_route').length,
+      database: rawGraph.nodes.filter(n => n.type === 'database_model').length,
+      dependencies: rawGraph.nodes.filter(n => n.type === 'package' || n.type === 'source_module' || n.type === 'application').length,
+    };
+  }, [rawGraph]);
 
   return (
     <header className="h-14 bg-[#0d0f17] border-b border-[#1c2233] px-4 flex items-center justify-between gap-4 select-none z-30">
@@ -120,6 +120,7 @@ export function TopBar() {
         <div className="flex items-center bg-[#131622] p-1 rounded-xl border border-[#222738]">
           {VIEWS.map(v => {
             const isActive = activeView === v.id;
+            const count = viewCounts[v.id] ?? 0;
             return (
               <button
                 key={v.id}
@@ -128,11 +129,25 @@ export function TopBar() {
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
                   isActive
                     ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#1c2233]'
+                    : count > 0
+                    ? 'text-slate-300 hover:text-white hover:bg-[#1c2233]'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-[#161a29]'
                 )}
               >
                 {v.icon}
                 <span>{v.label}</span>
+                <span
+                  className={clsx(
+                    'px-1.5 py-0.2 rounded-full text-[10px] font-mono',
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : count > 0
+                      ? 'bg-[#20273a] text-slate-300'
+                      : 'text-slate-600'
+                  )}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
@@ -143,6 +158,16 @@ export function TopBar() {
       <div className="flex items-center gap-2">
         {rawGraph && (
           <>
+            {/* Ask Stackfold AI Intelligence Button */}
+            <button
+              onClick={() => setAiAssistantOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 hover:from-indigo-900/90 hover:to-purple-900/90 border border-indigo-500/40 text-xs font-semibold text-indigo-200 hover:text-white transition-all shadow-md group"
+              title="Ask Stackfold — Architecture Intelligence"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="hidden md:inline">Ask Stackfold</span>
+            </button>
+
             {/* Density Selector */}
             <div className="hidden sm:flex items-center bg-[#131622] p-0.5 rounded-lg border border-[#222738] text-xs">
               {(['overview', 'standard', 'detailed'] as DensityLevel[]).map(d => (
@@ -184,11 +209,11 @@ export function TopBar() {
               )}
             </button>
 
-            {/* Export JSON */}
+            {/* Export Architecture */}
             <button
-              onClick={handleExportJson}
-              title="Export Graph as JSON"
-              className="p-2 rounded-lg bg-[#141724] border border-[#222738] hover:border-[#38415f] text-slate-400 hover:text-slate-200 transition-colors"
+              onClick={() => setExportModalOpen(true)}
+              title="Export Architecture (Mermaid, Markdown, JSON)"
+              className="p-2 rounded-lg bg-[#141724] border border-[#222738] hover:border-amber-500/50 text-slate-400 hover:text-amber-300 transition-colors"
             >
               <Download className="w-4 h-4" />
             </button>

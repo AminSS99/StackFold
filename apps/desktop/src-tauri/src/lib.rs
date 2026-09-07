@@ -466,7 +466,12 @@ pub mod commands {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| format!("Failed to spawn scanner sidecar with Node binary '{:?}': {}", node_bin, e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to spawn scanner sidecar with Node binary '{:?}': {}",
+                    node_bin, e
+                )
+            })?;
 
         let pid = child.id();
         if let Some(scans) = app.try_state::<Arc<ActiveScans>>() {
@@ -554,7 +559,10 @@ pub mod commands {
             String::new()
         };
 
-        Err(format!("Scanner process terminated without returning a result{}", detail))
+        Err(format!(
+            "Scanner process terminated without returning a result{}",
+            detail
+        ))
     }
 
     #[tauri::command]
@@ -860,7 +868,11 @@ mod tests {
     #[test]
     fn test_find_node_binary() {
         let node = find_node_binary();
-        assert!(node.is_ok(), "Node binary should be found on development/host system: {:?}", node.err());
+        assert!(
+            node.is_ok(),
+            "Node binary should be found on development/host system: {:?}",
+            node.err()
+        );
         let p = node.unwrap();
         assert!(p.exists(), "Resolved node path must exist: {:?}", p);
     }
@@ -868,7 +880,11 @@ mod tests {
     #[test]
     fn test_find_scanner_sidecar() {
         let sidecar = find_scanner_sidecar();
-        assert!(sidecar.is_ok(), "Sidecar must be found: {:?}", sidecar.err());
+        assert!(
+            sidecar.is_ok(),
+            "Sidecar must be found: {:?}",
+            sidecar.err()
+        );
         let p = sidecar.unwrap();
         assert!(p.exists(), "Resolved sidecar path must exist: {:?}", p);
     }

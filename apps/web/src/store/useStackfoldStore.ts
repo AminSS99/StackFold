@@ -57,8 +57,12 @@ interface StackfoldState {
   isCommandPaletteOpen: boolean;
   isDiagnosticsDrawerOpen: boolean;
   isOnboardingModalOpen: boolean;
+  isExportModalOpen: boolean;
+  isAiAssistantOpen: boolean;
 
   // Actions
+  setExportModalOpen: (open: boolean) => void;
+  setAiAssistantOpen: (open: boolean) => void;
   scan: (params: { rootPath?: string; fixture?: string; useCache?: boolean }) => Promise<void>;
   cancelScan: () => void;
   clearGraph: () => void;
@@ -128,6 +132,8 @@ export const useStackfoldStore = create<StackfoldState>((set, get) => ({
   isCommandPaletteOpen: false,
   isDiagnosticsDrawerOpen: false,
   isOnboardingModalOpen: false,
+  isExportModalOpen: false,
+  isAiAssistantOpen: false,
 
   loadRecentProjects: async () => {
     try {
@@ -348,6 +354,8 @@ export const useStackfoldStore = create<StackfoldState>((set, get) => ({
   setCommandPaletteOpen: open => set({ isCommandPaletteOpen: open }),
   setDiagnosticsDrawerOpen: open => set({ isDiagnosticsDrawerOpen: open }),
   setOnboardingModalOpen: open => set({ isOnboardingModalOpen: open }),
+  setExportModalOpen: open => set({ isExportModalOpen: open }),
+  setAiAssistantOpen: open => set({ isAiAssistantOpen: open }),
   setActiveInspectorTab: tab => set({ activeInspectorTab: tab }),
 
   recomputeLayout: () => {
