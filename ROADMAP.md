@@ -16,6 +16,19 @@ Stackfold is currently in **Early Alpha (v0.1.0)**. Our goal is to provide devel
 
 ---
 
+## Architecture Risk Modules (implemented, in-tree vertical slices)
+- [x] **PreviewFence**: Vercel preview/development bindings reusing production Supabase resources (confirmed high-severity findings, fingerprint-only graph nodes).
+- [x] **Drift Impact**: supplied upstream changes mapped to affected imports, symbols, and dependents (confirmed vs uncertain).
+- [x] **TxEscape**: Prisma transaction callbacks with email, external-request, and queued-job side effects (`risk_boundary` nodes, after-commit/outbox repair guidance).
+- [x] **ScopePatch & IDTrace**: GitHub App REST permission correlation with additive patch proposals; explicit typed identity-domain crossings.
+- [x] **Cache Isolation**: two-session Chromium probes over the selected project's `.stackfold/cache-isolation.json`, recorded results, and a labeled vulnerable demo in the Security Lab.
+- [x] **Signature Compatibility**: signer/verifier HMAC-SHA256 canonicalization checks with byte-exact mismatch evidence, recorded results, CLI entry point, and a Security Lab view.
+- [ ] **Queue Compatibility** (BullMQ payload replay): not implemented.
+- [ ] **JSONB Compatibility** (Zod/schema drift): not implemented.
+- [ ] **ErasePlan** (deletion rehearsal): not implemented — requires ownership edges first (see plan doc Phase 6).
+
+---
+
 ## Phase 2: Expanded Framework & Ecosystem Support (v0.2.0)
 - [ ] **Additional ORMs**:
   - Drizzle ORM schema parser (`drizzle.config.ts`, `pgTable`, `mysqlTable`, relations).

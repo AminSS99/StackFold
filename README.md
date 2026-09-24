@@ -50,8 +50,10 @@ Visual relational mapping parsed directly from your schema definitions:
   - **Package Dependencies**: Workspace inter-dependencies across monorepo boundaries.
 - **Blast-Radius Impact Analysis**: Select any node to calculate direct and transitive upstream and downstream dependencies.
 - **Deterministic Evidence**: Every discovered entity is backed by traceable evidence (source file path, exact line/column range, detector rule, and code snippet).
+- **Security Lab**: Selected-project testing workflows with recorded results and live checks — Cache Isolation two-session probes and Signature Compatibility signer/verifier mismatch analysis with byte-exact evidence and generated reproductions.
+- **Architecture Risk Modules**: PreviewFence, Drift Impact, TxEscape, ScopePatch, IDTrace, Cache Isolation, and Signature Compatibility findings flow through terminal, JSON, GitHub Actions, and CircleCI reporters.
 - **Standalone Native Desktop**: Native macOS desktop application (Tauri 2.x) with OS folder pickers, background cancellation, and zero orphaned processes.
-- **Local-First & Zero Secrets**: Runs 100% locally. Private environment values and credentials are never read, stored, logged, or exposed.
+- **Local-First & Zero Secrets**: Runs 100% locally. Private environment values and credentials are never read, stored, logged, or exposed. Cloud sync (Clerk) is strictly opt-in; without it the app runs in local mode with cloud controls disabled.
 
 ---
 
@@ -141,6 +143,23 @@ pnpm build:web
 
 # Native desktop production bundle (.app & .dmg on macOS)
 pnpm build:desktop
+
+# Full release build (web + desktop, as run in CI)
+pnpm build
+```
+
+### Security Module CLI (after `pnpm --filter=@stackfold/scanner build`)
+
+```bash
+# Scan any repository with terminal/JSON/CI reporters
+packages/scanner/dist/stackfold.cjs /path/to/repository --format terminal
+packages/scanner/dist/stackfold.cjs /path/to/repository --format github-actions --fail-on-findings
+
+# Two-session Cache Isolation probe (needs synthetic env credentials + markers)
+packages/scanner/dist/stackfold.cjs cache-isolation /path/to/repository --out result.json
+
+# Signer/verifier Signature Compatibility check (needs synthetic secret env)
+packages/scanner/dist/stackfold.cjs signature-compatibility /path/to/repository --out result.json
 ```
 
 ---
@@ -155,12 +174,15 @@ Stackfold is functional and self-hosting (it scans its own repository cleanly), 
 - **Language Scope**: Currently supports JavaScript and TypeScript codebases. Python, Go, and Rust backends are planned for future minor versions.
 - **Static AST Heuristics**: Dynamic runtime route mounting (e.g. meta-programmed Express routers) or non-standard file structures may require explicit path mapping.
 - **Large Repository Scaling**: Repositories with over 15,000 files will trigger file-count caps to protect desktop memory limits.
+- **Security Lab Scope**: Cache Isolation supports header-authenticated HTML/JSON/production-build routes with explicit synthetic credentials; desktop live probes require Playwright browsers alongside the sidecar and otherwise report an explicit unavailable state. Signature Compatibility tests explicitly configured HMAC-SHA256 canonicalizations with synthetic vectors — it does not execute arbitrary repository code or claim security certification.
+- **Queue/JSONB/ErasePlan**: Not implemented. Queue Compatibility, JSONB compatibility, and ErasePlan remain future work.
 
 ---
 
 ## Documentation & Community
 
 - [DOCUMENTATION.md](DOCUMENTATION.md) — The complete user manual, feature guide, and operational reference.
+- [Web App UI Implementation Plan](docs/WEB_APP_UI_IMPLEMENTATION_PLAN.md) — The implementation-ready product, interaction, visual, responsive, accessibility, and rollout specification for the next web experience.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Setup guide, detector tutorial, and fixture conventions.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Technical deep dive and data pipeline design.
 - [ROADMAP.md](ROADMAP.md) — What we're building next.
