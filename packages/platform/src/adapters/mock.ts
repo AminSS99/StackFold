@@ -1,9 +1,13 @@
 import type {
+  CacheIsolationPlatformPayload,
+  CacheIsolationPlatformRequest,
   PlatformAdapter,
   PreferredEditor,
   RecentProjectEntry,
   ScanPlatformParams,
   ScanPlatformResult,
+  SignatureCompatibilityPlatformPayload,
+  SignatureCompatibilityPlatformRequest,
 } from '../types';
 import type { PathValidationResult, ScanProgress, StackfoldScanArtifact } from '@stackfold/scanner';
 import { GraphBuilder } from '@stackfold/graph';
@@ -168,5 +172,21 @@ export class MockPlatformAdapter implements PlatformAdapter {
 
   async setWindowTitle(title: string): Promise<void> {
     this.windowTitle = title;
+  }
+
+  async loadCacheIsolationRecorded(_request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    return { success: false, error: 'Mock adapter has no recorded Cache Isolation result.', code: 'MOCK_UNAVAILABLE' };
+  }
+
+  async runCacheIsolationProbe(_request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    return { success: false, error: 'Mock adapter cannot run live browser probes.', code: 'MOCK_UNAVAILABLE' };
+  }
+
+  async loadSignatureCompatibilityRecorded(_request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    return { success: false, error: 'Mock adapter has no recorded Signature Compatibility result.', code: 'MOCK_UNAVAILABLE' };
+  }
+
+  async runSignatureCompatibilityProbe(_request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    return { success: false, error: 'Mock adapter cannot run live signature checks.', code: 'MOCK_UNAVAILABLE' };
   }
 }

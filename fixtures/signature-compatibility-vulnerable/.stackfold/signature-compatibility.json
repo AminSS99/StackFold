@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "hmac-sha256",
+  "secretEnv": "STACKFOLD_SIG_SECRET",
+  "signer": {
+    "file": "src/signer.js",
+    "function": "sign",
+    "canonicalization": [
+      "uppercase-method",
+      "preserve-query-order",
+      "preserve-percent-query",
+      "preserve-header-case",
+      "preserve-header-values",
+      "raw-body",
+      "preserve-newlines-body",
+      "preserve-body",
+      "include-timestamp"
+    ]
+  },
+  "verifier": {
+    "file": "src/verifier.js",
+    "function": "verify",
+    "canonicalization": [
+      "uppercase-method",
+      "sort-query-keys",
+      "decode-percent-query",
+      "lowercase-header-names",
+      "trim-header-values",
+      "json-sort-keys-body",
+      "nfc-body",
+      "decode-hex-body",
+      "exclude-timestamp",
+      "decode-base64-body",
+      "normalize-newlines-body",
+      "trim-body"
+    ]
+  },
+  "vectors": [
+    {
+      "id": "raw-body",
+      "label": "Raw JSON body",
+      "kind": "raw-body",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "{\"b\":2,\"a\":1}"
+    },
+    {
+      "id": "query-ordering",
+      "label": "Query parameter ordering",
+      "kind": "query-ordering",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "b=2&a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "ok"
+    },
+    {
+      "id": "unicode-normalization",
+      "label": "Unicode normalization",
+      "kind": "unicode-normalization",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "café"
+    },
+    {
+      "id": "timestamp-inclusion",
+      "label": "Timestamp inclusion",
+      "kind": "timestamp",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "ok",
+      "timestamp": "2026-09-24T12:00:00Z"
+    },
+    {
+      "id": "header-casing",
+      "label": "Header name casing",
+      "kind": "header-casing",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "X-Signature-Version": "1", "Content-Type": "text/plain" },
+      "body": "ok"
+    },
+    {
+      "id": "percent-encoding",
+      "label": "Percent encoding",
+      "kind": "percent-encoding",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "lang=en&q=hello%20world",
+      "headers": { "content-type": "text/plain" },
+      "body": "ok"
+    },
+    {
+      "id": "base64-body",
+      "label": "Base64-encoded body",
+      "kind": "hex-base64",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "aGVsbG8="
+    },
+    {
+      "id": "newline-whitespace",
+      "label": "Newline and whitespace",
+      "kind": "newline-whitespace",
+      "method": "POST",
+      "path": "/webhooks/events",
+      "query": "a=1",
+      "headers": { "content-type": "text/plain" },
+      "body": "line1\r\nline2  "
+    }
+  ]
+}

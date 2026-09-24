@@ -749,6 +749,289 @@ pub mod commands {
         }
         Ok(())
     }
+
+    fn resolve_security_target(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<(PathBuf, String), String> {
+        const ALLOWED_FIXTURES: &[&str] = &[
+            "cache-isolation-vulnerable",
+            "signature-compatibility-vulnerable",
+            "signature-compatibility-passing",
+            "preview-fence-vercel-supabase",
+            "tx-escape-prisma",
+            "scopepatch-idtrace",
+        ];
+        if let Some(fixture_id) = fixture.filter(|f| !f.trim().is_empty()) {
+            if !ALLOWED_FIXTURES.contains(&fixture_id.as_str()) {
+                return Err(format!("Unknown bundled fixture '{}'", fixture_id));
+            }
+            let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            // Desktop bundle may relocate fixtures; prefer dev tree, then bundle resources.
+            let candidates = vec![
+                manifest_dir.join(format!("../../fixtures/{}", fixture_id)),
+                manifest_dir.join(format!("../fixtures/{}", fixture_id)),
+            ];
+            for candidate in candidates {
+                if candidate.is_dir() {
+                    let canonical = candidate
+                        .canonicalize()
+                        .map_err(|e| format!("Failed to resolve fixture: {}", e))?;
+                    return Ok((canonical, format!("fixture:{}", fixture_id)));
+                }
+            }
+            return Err(format!(
+                "Bundled fixture '{}' is not available in this build",
+                fixture_id
+            ));
+        }
+        if let Some(raw) = root_path.filter(|p| !p.trim().is_empty()) {
+            let p = Path::new(raw.trim());
+            let canonical = p
+                .canonicalize()
+                .map_err(|_| format!("Directory not found: {}", raw.trim()))?;
+            if !canonical.is_dir() {
+                return Err("Selected path is a file, not a directory".to_string());
+            }
+            let canonical_str = canonical.to_string_lossy().to_string();
+            if is_forbidden_root(&canonical_str) {
+                return Err("Scanning system root or system directory is forbidden".to_string());
+            }
+            return Ok((canonical, "selected-project".to_string()));
+        }
+        Err("Either rootPath or fixture must be provided".to_string())
+    }
+
+    fn read_security_json(root: &Path, candidates: &[&str]) -> Option<(PathBuf, String)> {
+        for candidate in candidates {
+            let path = root.join(candidate);
+            if path.is_file() {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    // Validate that the file is JSON without logging its contents.
+                    if serde_json::from_str::<serde_json::Value>(&content).is_ok() {
+                        return Some((path, content));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    #[tauri::command]
+    pub fn load_cache_isolation_recorded(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let config_candidates = [
+            ".stackfold/cache-isolation.json",
+            "stackfold.cache-isolation.json",
+        ];
+        let config_path = read_security_json(&root, &config_candidates)
+            .map(|(p, _)| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if config_path.is_empty() {
+            return Err(format!(
+                "No Cache Isolation configuration found for '{}'. Add .stackfold/cache-isolation.json.",
+                source
+            ));
+        }
+        let result_candidates = [
+            ".stackfold/cache-isolation-results.json",
+            "stackfold.cache-isolation-results.json",
+        ];
+        match read_security_json(&root, &result_candidates) {
+            Some((_, content)) => {
+                let result: serde_json::Value =
+                    serde_json::from_str(&content).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({
+                    "success": true,
+                    "result": result,
+                    "source": format!("recorded:{}", source),
+                    "configPath": config_path,
+                }))
+            }
+            None => Err(format!(
+                "No recorded Cache Isolation result found for '{}'. Run a live probe first.",
+                source
+            )),
+        }
+    }
+
+    #[tauri::command]
+    pub async fn run_cache_isolation_probe(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let sidecar_path = find_scanner_sidecar()?;
+        let node_bin = find_node_binary()?;
+        let root_str = root.to_string_lossy().to_string();
+        let output = std::process::Command::new(&node_bin)
+            .arg(&sidecar_path)
+            .arg("cache-isolation")
+            .arg(&root_str)
+            .output()
+            .map_err(|e| format!("Failed to spawn scanner sidecar: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            // Return actionable failure payloads (Ok) instead of invoke
+            // rejections so the UI renders missing-env, browser, and target
+            // states with the platform capability codes.
+            if stderr.contains("requires runtime environment variable") {
+                let missing: Vec<String> = stderr
+                    .split('\'')
+                    .skip(1)
+                    .step_by(2)
+                    .map(|s| s.to_string())
+                    .collect();
+                return Ok(serde_json::json!({
+                    "success": false,
+                    "error": format!("Missing environment references: {}.", missing.join(", ")),
+                    "code": "MISSING_ENVIRONMENT",
+                    "source": source,
+                    "missingEnv": missing,
+                }));
+            }
+            if stderr.contains("playwright") || stderr.contains("browser") {
+                return Ok(serde_json::json!({
+                    "success": false,
+                    "error": "Playwright browser automation is unavailable in this desktop build.",
+                    "code": "PLAYWRIGHT_UNAVAILABLE",
+                    "source": source,
+                }));
+            }
+            if stderr.contains("TARGET_UNAVAILABLE")
+                || stderr.contains("ECONNREFUSED")
+                || stderr.contains("did not become reachable")
+                || stderr.contains("did not return a response")
+            {
+                return Ok(serde_json::json!({
+                    "success": false,
+                    "error": format!("Target application is unavailable for '{}'. Start the selected project first.", source),
+                    "code": "TARGET_UNAVAILABLE",
+                    "source": source,
+                }));
+            }
+            let detail = if stderr.is_empty() {
+                format!("exit code: {:?}", output.status.code())
+            } else {
+                stderr.chars().take(400).collect()
+            };
+            return Ok(serde_json::json!({
+                "success": false,
+                "error": format!("Cache Isolation probe failed: {}", detail),
+                "code": "PROBE_FAILED",
+                "source": source,
+            }));
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        // Sidecar cache-isolation prints privacy-safe JSON (fingerprints only).
+        let last_line = stdout.lines().last().unwrap_or("").trim();
+        let result: serde_json::Value =
+            serde_json::from_str(last_line).map_err(|e| format!("Invalid probe output: {}", e))?;
+        Ok(serde_json::json!({
+            "success": true,
+            "result": result,
+            "source": format!("live:{}", source),
+        }))
+    }
+
+    #[tauri::command]
+    pub fn load_signature_compatibility_recorded(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let config_candidates = [
+            ".stackfold/signature-compatibility.json",
+            "stackfold.signature-compatibility.json",
+        ];
+        let config_path = read_security_json(&root, &config_candidates)
+            .map(|(p, _)| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if config_path.is_empty() {
+            return Err(format!(
+                "No Signature Compatibility configuration found for '{}'. Add .stackfold/signature-compatibility.json.",
+                source
+            ));
+        }
+        let result_candidates = [
+            ".stackfold/signature-compatibility-results.json",
+            "stackfold.signature-compatibility-results.json",
+        ];
+        match read_security_json(&root, &result_candidates) {
+            Some((_, content)) => {
+                let result: serde_json::Value =
+                    serde_json::from_str(&content).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({
+                    "success": true,
+                    "result": result,
+                    "source": format!("recorded:{}", source),
+                    "configPath": config_path,
+                }))
+            }
+            None => Err(format!(
+                "No recorded Signature Compatibility result found for '{}'. Run a live check first.",
+                source
+            )),
+        }
+    }
+
+    #[tauri::command]
+    pub async fn run_signature_compatibility_probe(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let sidecar_path = find_scanner_sidecar()?;
+        let node_bin = find_node_binary()?;
+        let root_str = root.to_string_lossy().to_string();
+        let output = std::process::Command::new(&node_bin)
+            .arg(&sidecar_path)
+            .arg("signature-compatibility")
+            .arg(&root_str)
+            .output()
+            .map_err(|e| format!("Failed to spawn scanner sidecar: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            if stderr.contains("requires runtime environment variable") {
+                let missing: Vec<String> = stderr
+                    .split('\'')
+                    .skip(1)
+                    .step_by(2)
+                    .map(|s| s.to_string())
+                    .collect();
+                return Ok(serde_json::json!({
+                    "success": false,
+                    "error": format!("Missing environment reference: {}.", missing.join(", ")),
+                    "code": "MISSING_ENVIRONMENT",
+                    "source": source,
+                    "missingEnv": missing,
+                }));
+            }
+            let detail = if stderr.is_empty() {
+                format!("exit code: {:?}", output.status.code())
+            } else {
+                stderr.chars().take(400).collect()
+            };
+            return Ok(serde_json::json!({
+                "success": false,
+                "error": format!("Signature Compatibility check failed: {}", detail),
+                "code": "CHECK_FAILED",
+                "source": source,
+            }));
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let last_line = stdout.lines().last().unwrap_or("").trim();
+        let result: serde_json::Value =
+            serde_json::from_str(last_line).map_err(|e| format!("Invalid probe output: {}", e))?;
+        Ok(serde_json::json!({
+            "success": true,
+            "result": result,
+            "source": format!("live:{}", source),
+        }))
+    }
 }
 
 pub fn run() {
@@ -770,7 +1053,11 @@ pub fn run() {
             commands::remove_recent_project,
             commands::open_in_editor,
             commands::open_external_url,
-            commands::set_window_title
+            commands::set_window_title,
+            commands::load_cache_isolation_recorded,
+            commands::run_cache_isolation_probe,
+            commands::load_signature_compatibility_recorded,
+            commands::run_signature_compatibility_probe
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stackfold desktop application");

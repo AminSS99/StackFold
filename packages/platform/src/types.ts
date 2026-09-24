@@ -29,6 +29,34 @@ export interface ScanPlatformResult {
   canonicalPath?: string;
 }
 
+export interface CacheIsolationPlatformRequest {
+  rootPath?: string;
+  fixture?: string;
+}
+
+export interface CacheIsolationPlatformPayload {
+  success: boolean;
+  result?: unknown;
+  source?: string;
+  configPath?: string;
+  error?: string;
+  code?: string;
+}
+
+export interface SignatureCompatibilityPlatformRequest {
+  rootPath?: string;
+  fixture?: string;
+}
+
+export interface SignatureCompatibilityPlatformPayload {
+  success: boolean;
+  result?: unknown;
+  source?: string;
+  configPath?: string;
+  error?: string;
+  code?: string;
+}
+
 export interface PlatformAdapter {
   readonly id: 'web' | 'tauri' | 'mock';
   isDesktop(): boolean;
@@ -53,4 +81,8 @@ export interface PlatformAdapter {
   ): Promise<{ success: boolean; url?: string; error?: string }>;
   openExternalUrl(url: string): Promise<void>;
   setWindowTitle(title: string): Promise<void>;
+  loadCacheIsolationRecorded(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload>;
+  runCacheIsolationProbe(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload>;
+  loadSignatureCompatibilityRecorded(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload>;
+  runSignatureCompatibilityProbe(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload>;
 }

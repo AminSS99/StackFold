@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
-import { TopBar } from '@/components/navigation/TopBar';
+import { AppRail } from '@/components/shell/AppRail';
+import { ContextBar } from '@/components/shell/ContextBar';
 import { ProjectSidebar } from '@/components/sidebar/ProjectSidebar';
 import { Canvas } from '@/components/canvas/Canvas';
 import { Inspector } from '@/components/inspector/Inspector';
@@ -11,6 +12,8 @@ import { DiagnosticsDrawer } from '@/components/diagnostics/DiagnosticsDrawer';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import { ExportModal } from '@/components/export/ExportModal';
 import { ArchitectureAssistantModal } from '@/components/ai/ArchitectureAssistantModal';
+import { SaveProjectModal } from '@/components/cloud/SaveProjectModal';
+import { ShareModal } from '@/components/cloud/ShareModal';
 import type { GraphViewType } from '@stackfold/graph';
 
 const VIEW_MAP: Record<string, GraphViewType> = {
@@ -35,14 +38,26 @@ export default function StackfoldPage() {
   const setAiAssistantOpen = useStackfoldStore(s => s.setAiAssistantOpen);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
 
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [lastSavedSnapshotId, setLastSavedSnapshotId] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     loadRecentProjects();
   }, [loadRecentProjects]);
 
+  // Set default filter open state based on screen width
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsFilterOpen(window.innerWidth >= 1280);
+    }
+  }, []);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when typing in input or textarea
+      // Don't intercept when typing in input, textarea, or select
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA' ||
@@ -72,6 +87,11 @@ export default function StackfoldPage() {
         return;
       }
 
+      if (e.key === 'f' || e.key === 'F') {
+        setIsFilterOpen(prev => !prev);
+        return;
+      }
+
       if (rawGraph && VIEW_MAP[e.key]) {
         setActiveView(VIEW_MAP[e.key]!);
       }
@@ -92,30 +112,65 @@ export default function StackfoldPage() {
   ]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#090a0f] text-slate-100 overflow-hidden select-none">
-      {/* Top Navigation */}
-      <TopBar />
+    <div className="flex h-[100dvh] w-screen bg-[#070806] text-[#f6f7f2] overflow-hidden">
+      {/* Left App Rail */}
+      <AppRail />
 
       {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Sidebar (Only visible when project is loaded) */}
-        <ProjectSidebar />
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Top Context Bar */}
+        <ContextBar
+          isFilterOpen={isFilterOpen}
+          onToggleFilters={() => setIsFilterOpen(prev => !prev)}
+          onOpenSaveModal={() => setIsSaveModalOpen(true)}
+          onOpenShareModal={() => setIsShareModalOpen(true)}
+        />
 
-        {/* Center Canvas */}
-        <main className="flex-1 h-full relative overflow-hidden">
-          <Canvas />
-        </main>
+        {/* Workspace Canvas + Panels */}
+        <div className="flex-1 flex overflow-hidden relative min-h-0">
+          {/* Collapsible Filter Panel */}
+          {rawGraph && (
+            <ProjectSidebar
+              className={
+                isFilterOpen
+                  ? 'absolute inset-y-0 left-0 z-20 shadow-2xl xl:static xl:shadow-none'
+                  : 'hidden'
+              }
+            />
+          )}
 
-        {/* Right Inspector Panel */}
-        <Inspector />
+          {/* Center Graph Canvas & Adaptive Inspector */}
+          <main className="flex-1 h-full min-w-0 relative overflow-hidden sf-grid">
+            <Canvas />
+            <Inspector />
+          </main>
+        </div>
       </div>
 
-      {/* Overlays & Modals */}
+      {/* Global Overlays & Modals */}
       <CommandPalette />
       <DiagnosticsDrawer />
       <OnboardingModal />
       <ExportModal isOpen={isExportModalOpen} onClose={() => setExportModalOpen(false)} />
-      <ArchitectureAssistantModal isOpen={isAiAssistantOpen} onClose={() => setAiAssistantOpen(false)} />
+      <ArchitectureAssistantModal
+        isOpen={isAiAssistantOpen}
+        onClose={() => setAiAssistantOpen(false)}
+      />
+      <SaveProjectModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSaved={(_projId, snapId) => {
+          setLastSavedSnapshotId(snapId);
+        }}
+      />
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        snapshotId={lastSavedSnapshotId}
+        onNeedSaveFirst={() => {
+          setIsSaveModalOpen(true);
+        }}
+      />
     </div>
   );
 }

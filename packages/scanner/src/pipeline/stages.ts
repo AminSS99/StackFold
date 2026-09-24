@@ -7,6 +7,11 @@ export type ScanStage =
   | 'PARSING_TYPESCRIPT_AST'
   | 'DETECTING_ENV_VARS'
   | 'DETECTING_EXTERNAL_SDKS'
+  | 'ANALYZING_ENVIRONMENT_SAFETY'
+  | 'ANALYZING_DRIFT_IMPACT'
+  | 'ANALYZING_GUARDRAILS'
+  | 'ANALYZING_CACHE_ISOLATION'
+  | 'ANALYZING_SIGNATURE_COMPATIBILITY'
   | 'CROSS_LINKING_RELATIONS'
   | 'BUILDING_NORMALIZED_GRAPH'
   | 'COMPLETED';
@@ -30,6 +35,11 @@ export const STAGE_DESCRIPTIONS: Record<ScanStage, { label: string; progressWeig
   PARSING_TYPESCRIPT_AST: { label: 'Parsing TypeScript/JavaScript AST modules', progressWeight: 75 },
   DETECTING_ENV_VARS: { label: 'Mapping environment variables (zero secrets)', progressWeight: 85 },
   DETECTING_EXTERNAL_SDKS: { label: 'Detecting external cloud SDKs & services', progressWeight: 90 },
+  ANALYZING_ENVIRONMENT_SAFETY: { label: 'Analyzing environment-to-resource safety boundaries', progressWeight: 93 },
+  ANALYZING_DRIFT_IMPACT: { label: 'Mapping upstream changes to affected files and symbols', progressWeight: 94 },
+  ANALYZING_GUARDRAILS: { label: 'Evaluating architecture guardrail rules', progressWeight: 95 },
+  ANALYZING_CACHE_ISOLATION: { label: 'Mapping two-session cache-isolation probe results', progressWeight: 96 },
+  ANALYZING_SIGNATURE_COMPATIBILITY: { label: 'Comparing signer and verifier canonical inputs', progressWeight: 97 },
   CROSS_LINKING_RELATIONS: { label: 'Cross-linking database & service relations', progressWeight: 95 },
   BUILDING_NORMALIZED_GRAPH: { label: 'Validating graph integrity & computing metrics', progressWeight: 98 },
   COMPLETED: { label: 'Scan completed successfully', progressWeight: 100 },

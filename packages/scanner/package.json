@@ -8,9 +8,13 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "bin": {
+    "stackfold": "./dist/stackfold.cjs"
+  },
   "scripts": {
-    "build": "tsc && pnpm bundle:sidecar",
-    "bundle:sidecar": "esbuild src/cli/sidecar.ts --bundle --platform=node --target=node20 --outfile=dist/sidecar.cjs",
+    "build": "tsc && pnpm bundle:sidecar && pnpm bundle:cli",
+    "bundle:sidecar": "esbuild src/cli/sidecar.ts --bundle --platform=node --target=node20 --external:playwright --outfile=dist/sidecar.cjs",
+    "bundle:cli": "esbuild src/cli/index.ts --bundle --platform=node --target=node20 --external:playwright --outfile=dist/stackfold.cjs && chmod +x dist/stackfold.cjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -19,6 +23,9 @@
     "fast-glob": "^3.3.3",
     "typescript": "^5.7.3",
     "zod": "^3.24.2"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.62.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

@@ -27,6 +27,19 @@ export const NODE_DIMENSIONS: Record<NodeType, { width: number; height: number }
   database_model: { width: 260, height: 120 },
   environment_variable: { width: 230, height: 65 },
   external_service: { width: 240, height: 85 },
+  deployment_environment: { width: 250, height: 90 },
+  cloud_resource: { width: 250, height: 90 },
+  change_event: { width: 270, height: 95 },
+  risk_boundary: { width: 280, height: 95 },
+  api_operation: { width: 270, height: 90 },
+  permission_scope: { width: 250, height: 90 },
+  identity_domain: { width: 260, height: 90 },
+  security_probe: { width: 280, height: 95 },
+  browser_session: { width: 250, height: 90 },
+  cache_layer: { width: 250, height: 90 },
+  signer: { width: 250, height: 90 },
+  verifier: { width: 250, height: 90 },
+  signature_vector: { width: 280, height: 95 },
 };
 
 export function computeGraphLayout(

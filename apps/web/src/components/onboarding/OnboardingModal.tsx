@@ -279,6 +279,74 @@ export function OnboardingModal() {
                   pnpm Workspaces: 2 Next.js apps, shared Prisma DB &amp; utilities
                 </p>
               </button>
+
+              <button
+                onClick={() => handleScanFixture('preview-fence-vercel-supabase')}
+                disabled={isLoading}
+                className="col-span-2 p-3 rounded-xl bg-[#141724] hover:bg-[#1a1f30] border border-[#232a3f] hover:border-rose-500/50 text-left transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-slate-200 group-hover:text-rose-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-rose-400" />
+                    PreviewFence Risk Boundary
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-rose-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  Vercel preview deployment connected to a production Supabase project
+                </p>
+              </button>
+
+              <button
+                onClick={() => handleScanFixture('tx-escape-prisma')}
+                disabled={isLoading}
+                className="col-span-2 p-3 rounded-xl bg-[#141724] hover:bg-[#1a1f30] border border-[#232a3f] hover:border-red-500/50 text-left transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-slate-200 group-hover:text-red-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-red-400" />
+                    TxEscape Transaction Risk
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-red-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  Prisma transaction calling an imported helper that sends email through Resend
+                </p>
+              </button>
+
+              <button
+                onClick={() => handleScanFixture('scopepatch-idtrace')}
+                disabled={isLoading}
+                className="col-span-2 p-3 rounded-xl bg-[#141724] hover:bg-[#1a1f30] border border-[#232a3f] hover:border-fuchsia-500/50 text-left transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-slate-200 group-hover:text-fuchsia-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-fuchsia-400" />
+                    ScopePatch + IDTrace Guardrails
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-fuchsia-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  GitHub App REST permissions and explicit typed identity-domain crossings
+                </p>
+              </button>
+
+              <button
+                onClick={() => window.location.assign('/security-lab')}
+                disabled={isLoading}
+                className="col-span-2 p-3 rounded-xl bg-[#141724] hover:bg-[#1a1f30] border border-[#232a3f] hover:border-amber-500/60 text-left transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-slate-200 group-hover:text-amber-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-amber-400" />
+                    Cache Isolation Security Lab
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  Run two authenticated browser sessions and inspect the shared-cache path
+                </p>
+              </button>
             </div>
           </div>
 

@@ -12,7 +12,6 @@ import {
   Copy,
   Check,
   ShieldCheck,
-  Cpu,
 } from 'lucide-react';
 import type { GraphNode, GraphEdge } from '@stackfold/graph';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
@@ -20,6 +19,8 @@ import {
   buildSanitizedContextPayload,
   formatContextAsMarkdownPrompt,
 } from '@/lib/ai/context-builder';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 
 interface AiTabProps {
   node: GraphNode;
@@ -73,47 +74,40 @@ export function AiTab({ node, incomingEdges, outgoingEdges }: AiTabProps) {
 
   return (
     <div className="space-y-4 text-xs select-none">
-      {/* Optional AI Banner */}
-      <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-950/30 via-[#131625] to-purple-950/20 border border-indigo-500/30 space-y-2.5">
+      {/* AI Interpretation Header */}
+      <div className="p-3.5 rounded-lg bg-[#141611] border border-[#f6c945]/30 space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-slate-100">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span>AI Architecture Intelligence</span>
+          <div className="flex items-center gap-2 font-semibold text-[#f6f7f2]">
+            <Sparkles className="w-4 h-4 text-[#f6c945]" />
+            <span>AI Architecture Interpretation</span>
           </div>
-          <span className="px-2 py-0.5 rounded text-[10px] bg-[#1d2338] text-slate-300 border border-[#2b3552]">
-            Optional Layer
-          </span>
+          <Badge variant="yellow" size="sm">
+            Interpretation Layer
+          </Badge>
         </div>
-        <p className="text-[11px] text-slate-300 leading-relaxed">
-          Stackfold separates deterministic scanner facts from AI reasoning. No external AI keys are required for core graph analysis.
+        <p className="text-[11px] text-[#a5aa9b] leading-relaxed">
+          Stackfold clearly separates deterministic scanner facts from AI reasoning. Sanitized context can be copied directly to LLM tools without exposing local secrets.
         </p>
 
         {/* Copy Sanitized Context Prompt */}
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={handleCopyPrompt}
-          className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition-colors shadow-md text-xs"
+          className="w-full"
+          leftIcon={copied ? <Check className="w-3.5 h-3.5 text-[#070806]" /> : <Copy className="w-3.5 h-3.5" />}
         >
-          {copied ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Prompt Copied to Clipboard!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="w-3.5 h-3.5" />
-              <span>Copy Sanitized Context for ChatGPT / Claude</span>
-            </>
-          )}
-        </button>
+          {copied ? 'Prompt Copied to Clipboard!' : 'Copy Sanitized Context for LLM'}
+        </Button>
       </div>
 
       {/* Confirmed Scanner Facts (100% Deterministic) */}
-      <div className="p-3 rounded-xl bg-[#141724] border border-[#222738] space-y-2">
-        <div className="flex items-center gap-1.5 font-semibold text-emerald-300 text-[11px]">
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Confirmed Facts (Deterministic Static Analysis)</span>
+      <div className="p-3 rounded-lg bg-[#141611] border border-[#2a2d24] space-y-2">
+        <div className="flex items-center gap-1.5 font-semibold text-[#62d49b] text-[11px]">
+          <CheckCircle className="w-3.5 h-3.5 text-[#62d49b]" />
+          <span>Deterministic Facts (Static Analysis)</span>
         </div>
-        <ul className="space-y-1.5 text-[11px] text-slate-300 list-disc list-inside">
+        <ul className="space-y-1.5 text-[11px] text-[#f6f7f2] list-disc list-inside">
           {verifiedFacts.map((fact, idx) => (
             <li key={idx}>{fact}</li>
           ))}
@@ -121,37 +115,37 @@ export function AiTab({ node, incomingEdges, outgoingEdges }: AiTabProps) {
       </div>
 
       {/* Reasoning Guidelines & Inferences */}
-      <div className="p-3 rounded-xl bg-[#141724] border border-[#222738] space-y-2">
-        <div className="flex items-center gap-1.5 font-semibold text-indigo-300 text-[11px]">
-          <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+      <div className="p-3 rounded-lg bg-[#141611] border border-[#2a2d24] space-y-2">
+        <div className="flex items-center gap-1.5 font-semibold text-[#f6c945] text-[11px]">
+          <HelpCircle className="w-3.5 h-3.5 text-[#f6c945]" />
           <span>Architectural Role &amp; Data Flow Context</span>
         </div>
-        <p className="text-[11px] text-slate-400">
-          This component has {incomingEdges.length} upstream caller(s) and connects to {outgoingEdges.length} downstream service(s).
-          Changes to its signature will directly impact connected routes and database models.
+        <p className="text-[11px] text-[#a5aa9b] leading-relaxed">
+          This entity has {incomingEdges.length} upstream caller(s) and connects to {outgoingEdges.length} downstream service(s).
+          Modifications to its interface will propagate to connected API routes and database models.
         </p>
       </div>
 
       {/* Unknowns & External Boundaries */}
-      <div className="p-3 rounded-xl bg-[#141724] border border-[#222738] space-y-2">
-        <div className="flex items-center gap-1.5 font-semibold text-amber-300 text-[11px]">
-          <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+      <div className="p-3 rounded-lg bg-[#141611] border border-[#2a2d24] space-y-2">
+        <div className="flex items-center gap-1.5 font-semibold text-[#f6c945] text-[11px]">
+          <AlertCircle className="w-3.5 h-3.5 text-[#f6c945]" />
           <span>Runtime Boundaries &amp; Unknowns</span>
         </div>
-        <ul className="space-y-1 text-[11px] text-slate-400 list-disc list-inside">
-          <li>Production traffic volume and query latency (requires runtime APM telemetry).</li>
+        <ul className="space-y-1 text-[11px] text-[#a5aa9b] list-disc list-inside">
+          <li>Production traffic volume and query latency (requires runtime APM).</li>
           <li>Database table cardinality and dynamic runtime payload mutations.</li>
         </ul>
       </div>
 
       {/* Context Payload Preview (Zero Secret Guarantee) */}
-      <div className="p-3 rounded-xl bg-[#141724] border border-[#222738] space-y-2">
+      <div className="p-3 rounded-lg bg-[#141611] border border-[#2a2d24] space-y-2">
         <button
           onClick={() => setShowPayloadPreview(!showPayloadPreview)}
-          className="w-full flex items-center justify-between text-[11px] text-slate-400 font-medium hover:text-slate-200"
+          className="w-full flex items-center justify-between text-[11px] text-[#a5aa9b] font-medium hover:text-[#f6f7f2]"
         >
           <span className="flex items-center gap-1.5">
-            <Eye className="w-3.5 h-3.5 text-indigo-400" />
+            <Eye className="w-3.5 h-3.5 text-[#f6c945]" />
             Inspect Sanitized Context Payload
           </span>
           {showPayloadPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -159,11 +153,11 @@ export function AiTab({ node, incomingEdges, outgoingEdges }: AiTabProps) {
 
         {showPayloadPreview && (
           <div className="pt-2">
-            <div className="text-[10px] text-slate-500 mb-1 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            <div className="text-[10px] text-[#74796d] mb-1 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-[#62d49b]" />
               <span>Zero secret keys or private credential values are ever transmitted.</span>
             </div>
-            <pre className="p-2.5 rounded-lg bg-[#0c0e16] border border-[#1b2032] text-[10px] font-mono text-slate-300 max-h-40 overflow-y-auto">
+            <pre className="p-2.5 rounded-lg bg-[#070806] border border-[#2a2d24] text-[10px] font-mono text-[#a5aa9b] max-h-40 overflow-y-auto">
               {JSON.stringify(contextPayload, null, 2)}
             </pre>
           </div>

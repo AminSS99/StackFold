@@ -10,24 +10,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#090a0f',
-        surface: {
-          50: '#1e2230',
-          100: '#171a25',
-          200: '#12141d',
-          300: '#0d0f15',
+        background: 'var(--sf-bg)',
+        foreground: 'var(--sf-text)',
+        sf: {
+          bg: 'var(--sf-bg)',
+          surface: {
+            1: 'var(--sf-surface-1)',
+            2: 'var(--sf-surface-2)',
+            3: 'var(--sf-surface-3)',
+          },
+          border: {
+            DEFAULT: 'var(--sf-border)',
+            strong: 'var(--sf-border-strong)',
+          },
+          text: {
+            DEFAULT: 'var(--sf-text)',
+            muted: 'var(--sf-text-muted)',
+            subtle: 'var(--sf-text-subtle)',
+          },
+          yellow: {
+            DEFAULT: 'var(--sf-yellow)',
+            hover: 'var(--sf-yellow-hover)',
+            pressed: 'var(--sf-yellow-pressed)',
+            soft: 'var(--sf-yellow-soft)',
+          },
+          danger: 'var(--sf-danger)',
+          success: 'var(--sf-success)',
+          warning: 'var(--sf-warning)',
+          focus: 'var(--sf-focus)',
         },
-        border: {
-          subtle: '#222738',
-          default: '#2d334a',
-          hover: '#404968',
-        },
-        brand: {
-          50: '#eef2ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-        },
+      },
+      fontFamily: {
+        sans: ['var(--font-geist-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      borderRadius: {
+        DEFAULT: '10px',
+        card: '14px',
+        hero: '20px',
       },
     },
   },

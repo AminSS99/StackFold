@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "baseUrl": "http://127.0.0.1:4178",
+  "environment": "production-build-fixture",
+  "authentication": {
+    "kind": "header",
+    "headerName": "x-stackfold-test-session",
+    "sessionAEnv": "STACKFOLD_SESSION_A",
+    "sessionBEnv": "STACKFOLD_SESSION_B"
+  },
+  "markers": {
+    "sessionAMarkerEnv": "STACKFOLD_MARKER_A",
+    "sessionBMarkerEnv": "STACKFOLD_MARKER_B"
+  },
+  "probes": [
+    {
+      "id": "private-html",
+      "label": "HTML dashboard",
+      "kind": "html",
+      "path": "/dashboard"
+    },
+    {
+      "id": "private-json",
+      "label": "JSON identity endpoint",
+      "kind": "json",
+      "path": "/api/me"
+    },
+    {
+      "id": "production-build",
+      "label": "Production build route",
+      "kind": "production_build",
+      "path": "/production/dashboard"
+    }
+  ]
+}

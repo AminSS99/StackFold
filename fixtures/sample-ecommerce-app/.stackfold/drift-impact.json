@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "changes": [
+    {
+      "id": "stripe-sdk-major-18",
+      "source": {
+        "kind": "changelog",
+        "name": "Stripe Node SDK",
+        "version": "18.0.0",
+        "uri": "https://github.com/stripe/stripe-node/releases"
+      },
+      "summary": "Stripe constructor contract changed",
+      "severity": "high",
+      "targets": [
+        {
+          "kind": "package",
+          "packageName": "stripe",
+          "changedSymbols": ["Stripe"]
+        }
+      ],
+      "migrationSteps": [
+        "Review the Stripe client initialization against the 18.0.0 migration notes.",
+        "Run checkout and webhook fixture tests before upgrading the dependency."
+      ]
+    },
+    {
+      "id": "stripe-checkout-session-shape",
+      "source": {
+        "kind": "manual",
+        "name": "Stripe API",
+        "version": "2026-08-01"
+      },
+      "summary": "CheckoutSession response shape may change",
+      "severity": "high",
+      "targets": [
+        {
+          "kind": "package",
+          "packageName": "stripe",
+          "changedSymbols": ["CheckoutSession"]
+        }
+      ],
+      "migrationSteps": [
+        "Review CheckoutSession property accesses in the mapped candidate files.",
+        "Confirm the change description against the authoritative provider changelog."
+      ]
+    }
+  ]
+}

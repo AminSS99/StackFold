@@ -9,7 +9,20 @@ export type NodeType =
   | 'function'
   | 'database_model'
   | 'environment_variable'
-  | 'external_service';
+  | 'external_service'
+  | 'deployment_environment'
+  | 'cloud_resource'
+  | 'change_event'
+  | 'risk_boundary'
+  | 'api_operation'
+  | 'permission_scope'
+  | 'identity_domain'
+  | 'security_probe'
+  | 'browser_session'
+  | 'cache_layer'
+  | 'signer'
+  | 'verifier'
+  | 'signature_vector';
 
 export type EdgeType =
   | 'contains'
@@ -20,7 +33,19 @@ export type EdgeType =
   | 'writes'
   | 'depends_on'
   | 'configured_by'
-  | 'communicates_with';
+  | 'communicates_with'
+  | 'binds_to'
+  | 'may_impact'
+  | 'violates'
+  | 'traces_to'
+  | 'requires'
+  | 'declares'
+  | 'crosses'
+  | 'warms'
+  | 'serves'
+  | 'exposes_private_data'
+  | 'signs'
+  | 'verifies';
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -73,6 +98,28 @@ export interface ScanDiagnostic {
   details?: Record<string, unknown>;
 }
 
+export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type FindingStatus = 'confirmed' | 'uncertain';
+
+export interface FindingSourceLocation {
+  filePath: string;
+  sourceRange?: SourceRange;
+}
+
+export interface StackfoldFinding {
+  id: string;
+  ruleId: string;
+  severity: FindingSeverity;
+  status: FindingStatus;
+  title: string;
+  affectedNodeIds: string[];
+  sourceLocation: FindingSourceLocation;
+  evidence: Evidence[];
+  explanation: string;
+  suggestedAction: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface GraphStats {
   nodeCount: number;
   edgeCount: number;
@@ -95,6 +142,7 @@ export interface ProjectGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
   diagnostics: ScanDiagnostic[];
+  findings: StackfoldFinding[];
 }
 
 export type GraphViewType = 'architecture' | 'api_flow' | 'database' | 'dependencies';

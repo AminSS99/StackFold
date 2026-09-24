@@ -4,61 +4,96 @@
 
 @layer base {
   :root {
-    --background: #090a0f;
-    --foreground: #f1f5f9;
+    --sf-bg: #070806;
+    --sf-text: #f6f7f2;
+    --sf-surface-1: #0d0f0c;
+    --sf-surface-2: #141611;
+    --sf-surface-3: #1b1e17;
+    --sf-border: #2a2d24;
+    --sf-border-strong: #3b3f31;
+    --sf-text-muted: #a5aa9b;
+    --sf-text-subtle: #74796d;
+    --sf-yellow: #f6c945;
+    --sf-yellow-hover: #ffda67;
+    --sf-yellow-pressed: #d9aa22;
+    --sf-yellow-soft: rgba(246, 201, 69, 0.12);
+    --sf-danger: #ff6b6b;
+    --sf-success: #62d49b;
+    --sf-warning: #f6c945;
+    --sf-focus: #ffe48f;
+    --background: var(--sf-bg);
+    --foreground: var(--sf-text);
   }
 
   body {
-    background-color: #090a0f;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
     overflow: hidden;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--sf-focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .sf-grid {
+    background-image: linear-gradient(rgba(246, 201, 69, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(246, 201, 69, 0.035) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .sf-panel {
+    background: color-mix(in srgb, var(--sf-surface-1) 94%, transparent);
+    border: 1px solid var(--sf-border);
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.025);
   }
 }
 
 /* React Flow custom dark theme */
 .react-flow__background {
-  background-color: #090a0f !important;
+  background-color: #070806 !important;
 }
 
 .react-flow__edge-path {
-  stroke: #3b4261 !important;
-  stroke-width: 1.5px !important;
+  stroke: #363a31 !important;
+  stroke-width: 1.25px !important;
   transition: stroke 0.2s ease, stroke-width 0.2s ease;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: #818cf8 !important;
+  stroke: #f6c945 !important;
   stroke-width: 2.5px !important;
 }
 
 .react-flow__edge.highlighted .react-flow__edge-path {
-  stroke: #6366f1 !important;
+  stroke: #f6c945 !important;
   stroke-width: 2px !important;
 }
 
 .react-flow__controls {
-  background-color: #12141d !important;
-  border: 1px solid #222738 !important;
-  border-radius: 8px !important;
+  background-color: #11130f !important;
+  border: 1px solid #2a2d24 !important;
+  border-radius: 10px !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
 .react-flow__controls-button {
   background-color: transparent !important;
-  border-bottom: 1px solid #222738 !important;
-  color: #94a3b8 !important;
+  border-bottom: 1px solid #2a2d24 !important;
+  color: #a5aa9b !important;
 }
 
 .react-flow__controls-button:hover {
-  background-color: #1e2230 !important;
-  color: #f8fafc !important;
+  background-color: #1b1e17 !important;
+  color: #f6c945 !important;
 }
 
 .react-flow__minimap {
-  background-color: #0d0f15 !important;
-  border: 1px solid #222738 !important;
-  border-radius: 8px !important;
+  background-color: #0d0f0c !important;
+  border: 1px solid #2a2d24 !important;
+  border-radius: 10px !important;
 }
 
 /* Custom sleek scrollbar */
@@ -70,9 +105,18 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #272d42;
+  background: #3b3f31;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3b4363;
+  background: #555b49;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

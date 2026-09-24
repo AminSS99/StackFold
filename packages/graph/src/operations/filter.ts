@@ -37,6 +37,19 @@ export function filterGraph(graph: ProjectGraph, options: GraphFilterOptions): {
       'database_model',
       'external_service',
       'environment_variable',
+      'deployment_environment',
+      'cloud_resource',
+      'change_event',
+      'risk_boundary',
+      'api_operation',
+      'permission_scope',
+      'identity_domain',
+      'security_probe',
+      'browser_session',
+      'cache_layer',
+      'signer',
+      'verifier',
+      'signature_vector',
     ]);
     nodes = nodes.filter(n => coarseTypes.has(n.type));
     const activeNodeIds = new Set(nodes.map(n => n.id));

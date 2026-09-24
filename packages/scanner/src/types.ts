@@ -21,6 +21,14 @@ export interface ScanContext {
   tsJsFiles: string[];
   prismaFiles: string[];
   envExampleFiles: string[];
+  previewFenceConfigFiles: string[];
+  driftImpactConfigFiles: string[];
+  scopePatchConfigFiles: string[];
+  idTraceConfigFiles: string[];
+  cacheIsolationConfigFiles: string[];
+  cacheIsolationResultFiles: string[];
+  signatureCompatibilityConfigFiles: string[];
+  signatureCompatibilityResultFiles: string[];
   frameworks: Set<string>;
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'unknown';
   diagnostics: ScanDiagnostic[];

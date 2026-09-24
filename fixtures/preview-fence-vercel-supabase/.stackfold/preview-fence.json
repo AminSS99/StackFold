@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "environments": [
+    {
+      "provider": "vercel",
+      "name": "storefront-production",
+      "kind": "production",
+      "projectId": "vercel-storefront",
+      "resources": [
+        {
+          "provider": "supabase",
+          "type": "project",
+          "identifier": "production-project-ref",
+          "binding": "NEXT_PUBLIC_SUPABASE_URL",
+          "classification": "production"
+        }
+      ]
+    },
+    {
+      "provider": "vercel",
+      "name": "storefront-preview",
+      "kind": "preview",
+      "projectId": "vercel-storefront",
+      "resources": [
+        {
+          "provider": "supabase",
+          "type": "project",
+          "identifier": "production-project-ref",
+          "binding": "NEXT_PUBLIC_SUPABASE_URL",
+          "classification": "unknown"
+        }
+      ]
+    },
+    {
+      "provider": "vercel",
+      "name": "storefront-development",
+      "kind": "development",
+      "projectId": "vercel-storefront",
+      "resources": [
+        {
+          "provider": "supabase",
+          "type": "project",
+          "identifier": "development-project-ref",
+          "binding": "NEXT_PUBLIC_SUPABASE_URL",
+          "classification": "non-production"
+        }
+      ]
+    }
+  ]
+}

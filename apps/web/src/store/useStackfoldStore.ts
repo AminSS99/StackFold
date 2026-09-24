@@ -100,6 +100,19 @@ const ALL_NODE_TYPES: NodeType[] = [
   'database_model',
   'environment_variable',
   'external_service',
+  'deployment_environment',
+  'cloud_resource',
+  'change_event',
+  'risk_boundary',
+  'api_operation',
+  'permission_scope',
+  'identity_domain',
+  'security_probe',
+  'browser_session',
+  'cache_layer',
+  'signer',
+  'verifier',
+  'signature_vector',
 ];
 
 let activeScanAbortController: AbortController | null = null;

@@ -7,7 +7,7 @@ import type {
 } from '../types';
 
 export function calculateChangeImpact(
-  graph: ProjectGraph,
+  graph: Pick<ProjectGraph, 'nodes' | 'edges'>,
   targetNodeId: string,
   maxDepth = 5
 ): ChangeImpactResult {

@@ -48,6 +48,18 @@ export async function POST(req: Request) {
         targetPath = path.resolve(process.cwd(), '../../fixtures/sample-ecommerce-app');
       } else if (fixture === 'sample-monorepo-platform') {
         targetPath = path.resolve(process.cwd(), '../../fixtures/sample-monorepo-platform');
+      } else if (fixture === 'preview-fence-vercel-supabase') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/preview-fence-vercel-supabase');
+      } else if (fixture === 'tx-escape-prisma') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/tx-escape-prisma');
+      } else if (fixture === 'scopepatch-idtrace') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/scopepatch-idtrace');
+      } else if (fixture === 'cache-isolation-vulnerable') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/cache-isolation-vulnerable');
+      } else if (fixture === 'signature-compatibility-vulnerable') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-vulnerable');
+      } else if (fixture === 'signature-compatibility-passing') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-passing');
       } else if (fixture === 'stackfold-self') {
         targetPath = path.resolve(process.cwd(), '../../');
       } else {

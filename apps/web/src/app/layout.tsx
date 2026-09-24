@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/components/cloud/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'Stackfold — Visual Project Intelligence & Architecture Control Center',
@@ -14,8 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#090a0f] text-slate-100 antialiased overflow-hidden selection:bg-indigo-500 selection:text-white">
-        {children}
+      <body className="bg-[#070806] text-[#f6f7f2] antialiased overflow-hidden selection:bg-[#f6c945] selection:text-[#070806]">
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

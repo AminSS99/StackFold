@@ -8,6 +8,11 @@ import { nextjsDetector } from './detectors/nextjs';
 import { typescriptDetector } from './detectors/typescript';
 import { envDetector } from './detectors/env';
 import { externalServicesDetector } from './detectors/external-services';
+import { previewFenceDetector } from './detectors/preview-fence';
+import { driftImpactDetector } from './detectors/drift-impact';
+import { runGuardrailRules } from './guardrails/runner';
+import { cacheIsolationDetector } from './security/cache-isolation-detector';
+import { signatureCompatibilityDetector } from './security/signature-compatibility-detector';
 import { runPostScanCrossLinking } from './pipeline/validator';
 import { validateRepositoryPath } from './security/path-validator';
 import { ScanCacheManager } from './cache/manager';
@@ -23,6 +28,18 @@ export { nextjsDetector, normalizeRoutePath } from './detectors/nextjs';
 export { typescriptDetector } from './detectors/typescript';
 export { envDetector, parseEnvExample } from './detectors/env';
 export { externalServicesDetector } from './detectors/external-services';
+export { previewFenceDetector, parsePreviewFenceConfig } from './detectors/preview-fence';
+export { driftImpactDetector, parseDriftImpactConfig } from './detectors/drift-impact';
+export * from './reporting/findings';
+export * from './guardrails/types';
+export { runGuardrailRules, builtInGuardrailRules } from './guardrails/runner';
+export { txEscapeRule } from './guardrails/rules/tx-escape';
+export { scopePatchRule, parseScopePatchConfig } from './guardrails/rules/scope-patch';
+export { idTraceRule, parseIdTraceConfig } from './guardrails/rules/id-trace';
+export * from './security/cache-isolation';
+export { cacheIsolationDetector } from './security/cache-isolation-detector';
+export * from './security/signature-compatibility';
+export { signatureCompatibilityDetector } from './security/signature-compatibility-detector';
 
 export async function scanRepository(options: ScanOptions): Promise<ScanResult> {
   const startTime = Date.now();
@@ -84,6 +101,30 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
     path.basename(f).startsWith('.env.template') ||
     path.basename(f).startsWith('.env.sample')
   );
+  const previewFenceConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.preview-fence.json' || f === '.stackfold/preview-fence.json'
+  );
+  const driftImpactConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.drift-impact.json' || f === '.stackfold/drift-impact.json'
+  );
+  const scopePatchConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.github-app.json' || f === '.stackfold/github-app.json'
+  );
+  const idTraceConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.id-trace.json' || f === '.stackfold/id-trace.json'
+  );
+  const cacheIsolationConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.cache-isolation.json' || f === '.stackfold/cache-isolation.json'
+  );
+  const cacheIsolationResultFiles = boundedFileList.filter(f =>
+    f === 'stackfold.cache-isolation-results.json' || f === '.stackfold/cache-isolation-results.json'
+  );
+  const signatureCompatibilityConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.signature-compatibility.json' || f === '.stackfold/signature-compatibility.json'
+  );
+  const signatureCompatibilityResultFiles = boundedFileList.filter(f =>
+    f === 'stackfold.signature-compatibility-results.json' || f === '.stackfold/signature-compatibility-results.json'
+  );
 
   const context: ScanContext = {
     rootPath,
@@ -94,6 +135,14 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
     tsJsFiles,
     prismaFiles,
     envExampleFiles,
+    previewFenceConfigFiles,
+    driftImpactConfigFiles,
+    scopePatchConfigFiles,
+    idTraceConfigFiles,
+    cacheIsolationConfigFiles,
+    cacheIsolationResultFiles,
+    signatureCompatibilityConfigFiles,
+    signatureCompatibilityResultFiles,
     frameworks: new Set<string>(),
     diagnostics: [],
     signal,
@@ -129,12 +178,37 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
   if (signal?.aborted) throw new Error('Scan aborted by user');
   await externalServicesDetector.run(context);
 
-  // 10. Post-Scan Cross-linking
+  // 10. PreviewFence environment safety analysis
+  onProgress?.({ stage: 'ANALYZING_ENVIRONMENT_SAFETY', message: 'Checking Vercel environments against Supabase resource boundaries...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await previewFenceDetector.run(context);
+
+  // 11. Drift Impact upstream change analysis
+  onProgress?.({ stage: 'ANALYZING_DRIFT_IMPACT', message: 'Mapping supplied upstream changes to imports, symbols, and graph dependents...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await driftImpactDetector.run(context);
+
+  // 12. Architecture guardrail rules
+  onProgress?.({ stage: 'ANALYZING_GUARDRAILS', message: 'Checking transaction, permission, and identity boundaries...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await runGuardrailRules(context);
+
+  // 13. Cache Isolation security-test results
+  onProgress?.({ stage: 'ANALYZING_CACHE_ISOLATION', message: 'Mapping two-session cache-isolation probes and reproductions...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await cacheIsolationDetector.run(context);
+
+  // 14. Signature Compatibility signer/verifier results
+  onProgress?.({ stage: 'ANALYZING_SIGNATURE_COMPATIBILITY', message: 'Comparing signer and verifier canonical inputs...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await signatureCompatibilityDetector.run(context);
+
+  // 14. Post-Scan Cross-linking
   onProgress?.({ stage: 'CROSS_LINKING_RELATIONS', message: 'Cross-linking model & service relationships...' });
   if (signal?.aborted) throw new Error('Scan aborted by user');
   runPostScanCrossLinking(context);
 
-  // 11. Final Graph Construction
+  // 15. Final Graph Construction
   onProgress?.({ stage: 'BUILDING_NORMALIZED_GRAPH', message: 'Validating graph integrity...' });
   for (const diag of context.diagnostics) {
     builder.addDiagnostic(diag);
@@ -149,7 +223,7 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
 
   const durationMs = Date.now() - startTime;
 
-  // 12. Save artifact in cache
+  // 16. Save artifact in cache
   await cacheManager.saveArtifact({
     rootPath,
     projectName,
