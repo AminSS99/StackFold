@@ -50,8 +50,8 @@ Visual relational mapping parsed directly from your schema definitions:
   - **Package Dependencies**: Workspace inter-dependencies across monorepo boundaries.
 - **Blast-Radius Impact Analysis**: Select any node to calculate direct and transitive upstream and downstream dependencies.
 - **Deterministic Evidence**: Every discovered entity is backed by traceable evidence (source file path, exact line/column range, detector rule, and code snippet).
-- **Security Lab**: Selected-project testing workflows with recorded results and live checks — Cache Isolation two-session probes and Signature Compatibility signer/verifier mismatch analysis with byte-exact evidence and generated reproductions.
-- **Architecture Risk Modules**: PreviewFence, Drift Impact, TxEscape, ScopePatch, IDTrace, Cache Isolation, and Signature Compatibility findings flow through terminal, JSON, GitHub Actions, and CircleCI reporters.
+- **Security Lab**: Selected-project testing workflows with recorded results and live checks — Cache Isolation two-session probes, Signature Compatibility signer/verifier mismatch analysis with byte-exact evidence and generated reproductions, and Queue Compatibility historical BullMQ payload replays with exact failing fields.
+- **Architecture Risk Modules**: PreviewFence, Drift Impact, TxEscape, ScopePatch, IDTrace, Cache Isolation, Signature Compatibility, and Queue Compatibility findings flow through terminal, JSON, GitHub Actions, and CircleCI reporters.
 - **Standalone Native Desktop**: Native macOS desktop application (Tauri 2.x) with OS folder pickers, background cancellation, and zero orphaned processes.
 - **Local-First & Zero Secrets**: Runs 100% locally. Private environment values and credentials are never read, stored, logged, or exposed. Cloud sync (Clerk) is strictly opt-in; without it the app runs in local mode with cloud controls disabled.
 
@@ -160,6 +160,9 @@ packages/scanner/dist/stackfold.cjs cache-isolation /path/to/repository --out re
 
 # Signer/verifier Signature Compatibility check (needs synthetic secret env)
 packages/scanner/dist/stackfold.cjs signature-compatibility /path/to/repository --out result.json
+
+# Historical BullMQ payload replay against the worker contract (offline, no Redis)
+packages/scanner/dist/stackfold.cjs queue-compatibility /path/to/repository --out result.json
 ```
 
 ---
@@ -174,8 +177,8 @@ Stackfold is functional and self-hosting (it scans its own repository cleanly), 
 - **Language Scope**: Currently supports JavaScript and TypeScript codebases. Python, Go, and Rust backends are planned for future minor versions.
 - **Static AST Heuristics**: Dynamic runtime route mounting (e.g. meta-programmed Express routers) or non-standard file structures may require explicit path mapping.
 - **Large Repository Scaling**: Repositories with over 15,000 files will trigger file-count caps to protect desktop memory limits.
-- **Security Lab Scope**: Cache Isolation supports header-authenticated HTML/JSON/production-build routes with explicit synthetic credentials; desktop live probes require Playwright browsers alongside the sidecar and otherwise report an explicit unavailable state. Signature Compatibility tests explicitly configured HMAC-SHA256 canonicalizations with synthetic vectors — it does not execute arbitrary repository code or claim security certification.
-- **Queue/JSONB/ErasePlan**: Not implemented. Queue Compatibility, JSONB compatibility, and ErasePlan remain future work.
+- **Security Lab Scope**: Cache Isolation supports header-authenticated HTML/JSON/production-build routes with explicit synthetic credentials; desktop live probes require Playwright browsers alongside the sidecar and otherwise report an explicit unavailable state. Signature Compatibility tests explicitly configured HMAC-SHA256 canonicalizations with synthetic vectors — it does not execute arbitrary repository code or claim security certification. Queue Compatibility replays checked-in historical payload fixtures against a declared worker contract fully offline — it never executes worker code, needs no live Redis, and cannot observe runtime-only validation, delayed-job semantics, or backoff behavior.
+- **JSONB/ErasePlan**: Not implemented. JSONB compatibility, Dexie upgrade testing, and ErasePlan remain future work.
 
 ---
 

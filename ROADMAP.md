@@ -23,7 +23,7 @@ Stackfold is currently in **Early Alpha (v0.1.0)**. Our goal is to provide devel
 - [x] **ScopePatch & IDTrace**: GitHub App REST permission correlation with additive patch proposals; explicit typed identity-domain crossings.
 - [x] **Cache Isolation**: two-session Chromium probes over the selected project's `.stackfold/cache-isolation.json`, recorded results, and a labeled vulnerable demo in the Security Lab.
 - [x] **Signature Compatibility**: signer/verifier HMAC-SHA256 canonicalization checks with byte-exact mismatch evidence, recorded results, CLI entry point, and a Security Lab view.
-- [ ] **Queue Compatibility** (BullMQ payload replay): not implemented.
+- [x] **Queue Compatibility**: offline replay of historical BullMQ payload fixtures against the current worker contract (compatible/review/fail verdicts with exact failing fields), recorded results, CLI entry point, and a Security Lab view. No live Redis required.
 - [ ] **JSONB Compatibility** (Zod/schema drift): not implemented.
 - [ ] **ErasePlan** (deletion rehearsal): not implemented — requires ownership edges first (see plan doc Phase 6).
 
