@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-25T08:51:22.848Z",
+  "generatedAt": "2026-09-25T10:04:30.011Z",
   "queues": [
     {
       "id": "billing",
@@ -93,7 +93,7 @@
       "failingField": "priority",
       "failingStep": "check-unknown-fields",
       "dataFingerprint": "702fe0a1ce32",
-      "comparison": "unknown field 'priority' is present for job 'charge' but is not part of the worker contract. The worker may ignore or reject it. payload #702fe0a1ce32.",
+      "comparison": "unknown field 'priority' present for job 'charge' but not part of the worker contract. The worker may ignore or reject it. payload #702fe0a1ce32.",
       "appliedMigrations": [],
       "reason": "unknown field 'priority'"
     },

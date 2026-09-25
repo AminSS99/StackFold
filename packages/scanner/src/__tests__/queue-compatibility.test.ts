@@ -192,4 +192,71 @@ describe('Queue Compatibility testing module', () => {
   it('redactPayloadData is exported for adapter use', () => {
     expect(redactPayloadData({ a: 1 }, [])).toEqual({ a: 1 });
   });
+
+  it('downgrades worker-tolerated missing fields to review instead of confirmed fail', () => {
+    const queue = {
+      ...readFailingConfig().queues[0]!,
+      schema: {
+        strict: false,
+        fields: readFailingConfig().queues[0]!.schema.fields.map(field =>
+          field.path === 'customer.email' ? { ...field, onMissing: 'review' as const } : field
+        ),
+      },
+    };
+    const outcome = replayPayloadAgainstConsumer(
+      queue,
+      { id: 'probe', label: 'probe', queue: 'billing', jobName: 'charge', payloadVersion: 'v1', dataRef: 'probe.json' },
+      { chargeId: 'ch_probe', amount: 100, currency: 'USD', customer: { id: 'cus_probe' } }
+    );
+    expect(outcome.verdict).toBe('review');
+    expect(outcome.failingField).toBe('customer.email');
+    expect(outcome.failingStep).toBe('check-required-fields');
+    expect(outcome.reason).toContain('tolerated');
+  });
+
+  it('downgrades worker-tolerated type mismatches to review instead of confirmed fail', () => {
+    const queue = {
+      ...readFailingConfig().queues[0]!,
+      schema: {
+        strict: false,
+        fields: readFailingConfig().queues[0]!.schema.fields.map(field =>
+          field.path === 'amountCents' ? { ...field, onTypeMismatch: 'review' as const } : field
+        ),
+      },
+    };
+    const outcome = replayPayloadAgainstConsumer(
+      queue,
+      { id: 'probe', label: 'probe', queue: 'billing', jobName: 'charge', payloadVersion: 'v2', dataRef: 'probe.json' },
+      {
+        chargeId: 'ch_probe',
+        amountCents: '1999',
+        currency: 'USD',
+        customer: { id: 'cus_probe', email: 'probe@example.com' },
+      }
+    );
+    expect(outcome.verdict).toBe('review');
+    expect(outcome.failingField).toBe('amountCents');
+    expect(outcome.failingStep).toBe('check-field-types');
+  });
+
+  it('reports top-level unknown fields before nested ones and lists every unknown path', () => {
+    const queue = readFailingConfig().queues[0]!;
+    const outcome = replayPayloadAgainstConsumer(
+      queue,
+      { id: 'probe', label: 'probe', queue: 'billing', jobName: 'charge', payloadVersion: 'v2', dataRef: 'probe.json' },
+      {
+        chargeId: 'ch_probe',
+        amountCents: 100,
+        currency: 'USD',
+        customer: { id: 'cus_probe', email: 'probe@example.com', nickname: 'nick' },
+        metadata: { orderId: 'ord_1' },
+        topLevelExtra: true,
+      }
+    );
+    expect(outcome.verdict).toBe('review');
+    expect(outcome.failingField).toBe('topLevelExtra');
+    expect(outcome.comparison).toContain("'topLevelExtra'");
+    expect(outcome.comparison).toContain("'customer.nickname'");
+    expect(outcome.comparison).toContain("'metadata.orderId'");
+  });
 });

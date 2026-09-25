@@ -40,6 +40,11 @@ const queueFieldSchema = z.object({
   addedIn: z.string().optional(),
   removedIn: z.string().optional(),
   renamedFrom: z.string().optional(),
+  // Worker-tolerance policy, grounded in what the consumer actually enforces.
+  // A field the worker tolerates when absent or mistyped keeps 'required: true'
+  // (the producer contract) but reports 'review' instead of a confirmed fail.
+  onMissing: z.enum(['fail', 'review']).default('fail'),
+  onTypeMismatch: z.enum(['fail', 'review']).default('fail'),
 });
 
 const queueMigrationSchema = z.object({
@@ -386,14 +391,17 @@ export function replayPayloadAgainstConsumer(
     if (!found) {
       const addedNote = field.addedIn ? ` (added in ${field.addedIn})` : '';
       const renamedNote = field.renamedFrom ? ` (renamed from '${field.renamedFrom}')` : '';
+      const tolerated = field.onMissing === 'review';
       return {
-        verdict: 'fail',
+        verdict: tolerated ? ('review' as const) : ('fail' as const),
         failingField: field.path,
         failingStep: 'check-required-fields',
         appliedMigrations,
-        comparison: `required field '${field.path}'${addedNote}${renamedNote} is missing for job '${payload.jobName}' at validation step 'check-required-fields'. Expected type '${field.type}'. ${fingerprintNote}.`,
+        comparison: `required field '${field.path}'${addedNote}${renamedNote} is missing for job '${payload.jobName}' at validation step 'check-required-fields'. Expected type '${field.type}'. ${fingerprintNote}.${tolerated ? ' The worker tolerates absence, so this requires review rather than a confirmed failure.' : ''}`,
         workingData: working,
-        reason: `missing required field '${field.path}'`,
+        reason: tolerated
+          ? `missing tolerated field '${field.path}'`
+          : `missing required field '${field.path}'`,
       };
     }
   }
@@ -403,56 +411,79 @@ export function replayPayloadAgainstConsumer(
     if (!found) continue;
     const actual = actualTypeName(value);
     if (!typeMatches(actual, field.type)) {
+      const tolerated = field.onTypeMismatch === 'review';
       return {
-        verdict: 'fail',
+        verdict: tolerated ? ('review' as const) : ('fail' as const),
         failingField: field.path,
         failingStep: 'check-field-types',
         appliedMigrations,
-        comparison: `field '${field.path}' has type '${actual}' but the worker expects '${field.type}' for job '${payload.jobName}' at validation step 'check-field-types'. ${fingerprintNote}.`,
+        comparison: `field '${field.path}' has type '${actual}' but the worker expects '${field.type}' for job '${payload.jobName}' at validation step 'check-field-types'. ${fingerprintNote}.${tolerated ? ' The worker tolerates the mistyped value, so this requires review rather than a confirmed failure.' : ''}`,
         workingData: working,
-        reason: `type mismatch at '${field.path}' (actual '${actual}', expected '${field.type}')`,
+        reason: tolerated
+          ? `tolerated type mismatch at '${field.path}' (actual '${actual}', expected '${field.type}')`
+          : `type mismatch at '${field.path}' (actual '${actual}', expected '${field.type}')`,
       };
     }
   }
 
-  const leafPaths = collectLeafPaths(working);
-  for (const leafPath of leafPaths) {
-    const removedField = fields.find(field => field.removedIn && field.path === leafPath);
-    if (removedField) {
+  // Removed-but-present fields are reported before unknown-field analysis so
+  // declared removals are never masked by traversal order.
+  for (const field of fields) {
+    if (!field.removedIn) continue;
+    if (getPathValue(working, field.path).found) {
       return {
         verdict: 'review',
-        failingField: leafPath,
+        failingField: field.path,
         failingStep: 'check-removed-fields',
         appliedMigrations,
-        comparison: `field '${leafPath}' was removed in ${removedField.removedIn} but is still present in the historical payload for job '${payload.jobName}'. The worker may ignore it. ${fingerprintNote}.`,
+        comparison: `field '${field.path}' was removed in ${field.removedIn} but is still present in the historical payload for job '${payload.jobName}'. The worker may ignore it. ${fingerprintNote}.`,
         workingData: working,
-        reason: `removed field '${leafPath}' still present`,
+        reason: `removed field '${field.path}' still present`,
       };
     }
+  }
+
+  // Unknown fields are reported top-level-first: queue-level shape deviations
+  // are more actionable than nested leaves, and every unknown path is listed
+  // (capped) so none is masked by traversal order.
+  const unknownTopLevel: string[] = [];
+  const unknownNested: string[] = [];
+  for (const leafPath of collectLeafPaths(working)) {
     if (knownPaths.has(leafPath) || renamedFromPaths.has(leafPath)) continue;
-    // Array indices belong to a known array field; only flag unknown object keys.
     const parentPath = leafPath.split('.').slice(0, -1).join('.');
     const leafKey = leafPath.split('.').pop() || '';
+    // Array indices belong to a known array field; only flag unknown object keys.
     if (/^\d+$/.test(leafKey) && (knownPaths.has(parentPath) || parentPath === '')) continue;
+    if (leafPath.includes('.')) {
+      unknownNested.push(leafPath);
+    } else {
+      unknownTopLevel.push(leafPath);
+    }
+  }
+  const unknownPaths = [...unknownTopLevel, ...unknownNested];
+  if (unknownPaths.length > 0) {
+    const shown = unknownPaths.slice(0, 8).map(p => `'${p}'`).join(', ');
+    const remainder = unknownPaths.length > 8 ? ` and ${unknownPaths.length - 8} more` : '';
+    const first = unknownPaths[0]!;
     if (queue.schema.strict) {
       return {
         verdict: 'fail',
-        failingField: leafPath,
+        failingField: first,
         failingStep: 'check-unknown-fields',
         appliedMigrations,
-        comparison: `unknown field '${leafPath}' is present for job '${payload.jobName}' and the queue schema is strict. ${fingerprintNote}.`,
+        comparison: `unknown field ${shown}${remainder} present for job '${payload.jobName}' and the queue schema is strict. ${fingerprintNote}.`,
         workingData: working,
-        reason: `unknown field '${leafPath}' under strict schema`,
+        reason: `unknown field '${first}' under strict schema`,
       };
     }
     return {
       verdict: 'review',
-      failingField: leafPath,
+      failingField: first,
       failingStep: 'check-unknown-fields',
       appliedMigrations,
-      comparison: `unknown field '${leafPath}' is present for job '${payload.jobName}' but is not part of the worker contract. The worker may ignore or reject it. ${fingerprintNote}.`,
+      comparison: `unknown field ${shown}${remainder} present for job '${payload.jobName}' but not part of the worker contract. The worker may ignore or reject it. ${fingerprintNote}.`,
       workingData: working,
-      reason: `unknown field '${leafPath}'`,
+      reason: `unknown field '${first}'`,
     };
   }
 
