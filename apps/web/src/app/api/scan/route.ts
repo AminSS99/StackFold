@@ -60,6 +60,10 @@ export async function POST(req: Request) {
         targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-vulnerable');
       } else if (fixture === 'signature-compatibility-passing') {
         targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-passing');
+      } else if (fixture === 'queue-compatibility-failing') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/queue-compatibility-failing');
+      } else if (fixture === 'queue-compatibility-passing') {
+        targetPath = path.resolve(process.cwd(), '../../fixtures/queue-compatibility-passing');
       } else if (fixture === 'stackfold-self') {
         targetPath = path.resolve(process.cwd(), '../../');
       } else {

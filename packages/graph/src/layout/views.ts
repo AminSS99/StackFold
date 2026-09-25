@@ -37,6 +37,10 @@ export const VIEW_DEFINITIONS: Record<GraphViewType, ViewFilterDefinition> = {
       'signer',
       'verifier',
       'signature_vector',
+      'queue',
+      'queue_producer',
+      'queue_consumer',
+      'job_payload',
     ],
     description: 'System-level architecture showing applications, services, APIs, databases, and configuration.',
   },
@@ -58,8 +62,8 @@ export const VIEW_DEFINITIONS: Record<GraphViewType, ViewFilterDefinition> = {
     description: 'Database entity-relationship diagram and the routes/modules that interact with them.',
   },
   dependencies: {
-    allowedNodeTypes: ['application', 'package', 'source_module', 'external_service', 'deployment_environment', 'cloud_resource', 'change_event', 'risk_boundary', 'api_operation', 'permission_scope', 'identity_domain', 'security_probe', 'browser_session', 'cache_layer', 'signer', 'verifier', 'signature_vector'],
-    allowedEdgeTypes: ['depends_on', 'imports', 'contains', 'binds_to', 'may_impact', 'violates', 'traces_to', 'calls', 'requires', 'declares', 'crosses', 'warms', 'serves', 'exposes_private_data', 'signs', 'verifies'],
+    allowedNodeTypes: ['application', 'package', 'source_module', 'external_service', 'deployment_environment', 'cloud_resource', 'change_event', 'risk_boundary', 'api_operation', 'permission_scope', 'identity_domain', 'security_probe', 'browser_session', 'cache_layer', 'signer', 'verifier', 'signature_vector', 'queue', 'queue_producer', 'queue_consumer', 'job_payload'],
+    allowedEdgeTypes: ['depends_on', 'imports', 'contains', 'binds_to', 'may_impact', 'violates', 'traces_to', 'calls', 'requires', 'declares', 'crosses', 'warms', 'serves', 'exposes_private_data', 'signs', 'verifies', 'enqueues', 'consumes', 'replays'],
     description: 'Monorepo workspace packages, source modules, and third-party dependencies.',
   },
 };

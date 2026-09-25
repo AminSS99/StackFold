@@ -1,0 +1,7 @@
+{
+  "chargeId": "ch_test_006",
+  "amount": 1299,
+  "currency": "USD",
+  "customer": { "id": "cus_test_128", "email": "receipts@example.com" },
+  "legacyNote": "migrated from legacy billing"
+}

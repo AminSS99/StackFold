@@ -3,6 +3,8 @@ import type {
   CacheIsolationPlatformRequest,
   PlatformAdapter,
   PreferredEditor,
+  QueueCompatibilityPlatformPayload,
+  QueueCompatibilityPlatformRequest,
   RecentProjectEntry,
   ScanPlatformParams,
   ScanPlatformResult,
@@ -188,5 +190,13 @@ export class MockPlatformAdapter implements PlatformAdapter {
 
   async runSignatureCompatibilityProbe(_request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
     return { success: false, error: 'Mock adapter cannot run live signature checks.', code: 'MOCK_UNAVAILABLE' };
+  }
+
+  async loadQueueCompatibilityRecorded(_request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    return { success: false, error: 'Mock adapter has no recorded Queue Compatibility result.', code: 'MOCK_UNAVAILABLE' };
+  }
+
+  async runQueueCompatibilityCheck(_request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    return { success: false, error: 'Mock adapter cannot run live queue checks.', code: 'MOCK_UNAVAILABLE' };
   }
 }

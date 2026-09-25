@@ -34,6 +34,10 @@ export const nodeTypeEnum = z.enum([
   'signer',
   'verifier',
   'signature_vector',
+  'queue',
+  'queue_producer',
+  'queue_consumer',
+  'job_payload',
 ]);
 
 export const edgeTypeEnum = z.enum([
@@ -58,6 +62,9 @@ export const edgeTypeEnum = z.enum([
   'exposes_private_data',
   'signs',
   'verifies',
+  'enqueues',
+  'consumes',
+  'replays',
 ]);
 
 export const confidenceLevelEnum = z.enum([

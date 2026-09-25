@@ -189,6 +189,10 @@ export class GraphBuilder {
       signer: 0,
       verifier: 0,
       signature_vector: 0,
+      queue: 0,
+      queue_producer: 0,
+      queue_consumer: 0,
+      job_payload: 0,
     };
 
     const initialEdgeCounts: Record<EdgeType, number> = {
@@ -213,6 +217,9 @@ export class GraphBuilder {
       exposes_private_data: 0,
       signs: 0,
       verifies: 0,
+      enqueues: 0,
+      consumes: 0,
+      replays: 0,
     };
 
     const nodeTypeCounts = this.getNodes().reduce((acc, n) => {

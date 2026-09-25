@@ -59,6 +59,10 @@ const NODE_TYPES = {
   signer: BrowserSessionNode,
   verifier: BrowserSessionNode,
   signature_vector: SecurityProbeNode,
+  queue: CacheLayerNode,
+  queue_producer: BrowserSessionNode,
+  queue_consumer: BrowserSessionNode,
+  job_payload: SecurityProbeNode,
 };
 
 const EDGE_TYPES = {
@@ -306,6 +310,14 @@ export function Canvas() {
                 case 'verifier':
                   return '#818cf8';
                 case 'signature_vector':
+                  return '#22c55e';
+                case 'queue':
+                  return '#f6c945';
+                case 'queue_producer':
+                  return '#38bdf8';
+                case 'queue_consumer':
+                  return '#818cf8';
+                case 'job_payload':
                   return '#22c55e';
                 default:
                   return '#64748b';

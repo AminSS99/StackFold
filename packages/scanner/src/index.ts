@@ -13,6 +13,7 @@ import { driftImpactDetector } from './detectors/drift-impact';
 import { runGuardrailRules } from './guardrails/runner';
 import { cacheIsolationDetector } from './security/cache-isolation-detector';
 import { signatureCompatibilityDetector } from './security/signature-compatibility-detector';
+import { queueCompatibilityDetector } from './security/queue-compatibility-detector';
 import { runPostScanCrossLinking } from './pipeline/validator';
 import { validateRepositoryPath } from './security/path-validator';
 import { ScanCacheManager } from './cache/manager';
@@ -40,6 +41,8 @@ export * from './security/cache-isolation';
 export { cacheIsolationDetector } from './security/cache-isolation-detector';
 export * from './security/signature-compatibility';
 export { signatureCompatibilityDetector } from './security/signature-compatibility-detector';
+export * from './security/queue-compatibility';
+export { queueCompatibilityDetector } from './security/queue-compatibility-detector';
 
 export async function scanRepository(options: ScanOptions): Promise<ScanResult> {
   const startTime = Date.now();
@@ -125,6 +128,12 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
   const signatureCompatibilityResultFiles = boundedFileList.filter(f =>
     f === 'stackfold.signature-compatibility-results.json' || f === '.stackfold/signature-compatibility-results.json'
   );
+  const queueCompatibilityConfigFiles = boundedFileList.filter(f =>
+    f === 'stackfold.queue-compatibility.json' || f === '.stackfold/queue-compatibility.json'
+  );
+  const queueCompatibilityResultFiles = boundedFileList.filter(f =>
+    f === 'stackfold.queue-compatibility-results.json' || f === '.stackfold/queue-compatibility-results.json'
+  );
 
   const context: ScanContext = {
     rootPath,
@@ -143,6 +152,8 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
     cacheIsolationResultFiles,
     signatureCompatibilityConfigFiles,
     signatureCompatibilityResultFiles,
+    queueCompatibilityConfigFiles,
+    queueCompatibilityResultFiles,
     frameworks: new Set<string>(),
     diagnostics: [],
     signal,
@@ -202,6 +213,11 @@ export async function scanRepository(options: ScanOptions): Promise<ScanResult> 
   onProgress?.({ stage: 'ANALYZING_SIGNATURE_COMPATIBILITY', message: 'Comparing signer and verifier canonical inputs...' });
   if (signal?.aborted) throw new Error('Scan aborted by user');
   await signatureCompatibilityDetector.run(context);
+
+  // 15. Queue Compatibility historical payload results
+  onProgress?.({ stage: 'ANALYZING_QUEUE_COMPATIBILITY', message: 'Replaying historical queue payloads against worker contracts...' });
+  if (signal?.aborted) throw new Error('Scan aborted by user');
+  await queueCompatibilityDetector.run(context);
 
   // 14. Post-Scan Cross-linking
   onProgress?.({ stage: 'CROSS_LINKING_RELATIONS', message: 'Cross-linking model & service relationships...' });

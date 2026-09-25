@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-25T08:51:22.848Z",
+  "queues": [
+    {
+      "id": "billing",
+      "queue": "billing",
+      "consumerVersion": "v2",
+      "producerFile": "src/producer.js",
+      "consumerFile": "src/worker.js",
+      "payloadVersions": [
+        "v1",
+        "v2"
+      ],
+      "compatible": 2,
+      "review": 2,
+      "fail": 2
+    }
+  ],
+  "payloads": [
+    {
+      "id": "charge-v2-ok",
+      "label": "Current v2 charge",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "consumerVersion": "v2",
+      "verdict": "compatible",
+      "failingField": null,
+      "failingStep": null,
+      "dataFingerprint": "3f30a34541dd",
+      "comparison": "payload 'charge-v2-ok' satisfies the worker contract for job 'charge' (consumer version 'v2'). payload #3f30a34541dd.",
+      "appliedMigrations": []
+    },
+    {
+      "id": "charge-v1-migratable",
+      "label": "Historical v1 charge with declared rename",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "consumerVersion": "v2",
+      "verdict": "compatible",
+      "failingField": null,
+      "failingStep": null,
+      "dataFingerprint": "62a87de0deb7",
+      "comparison": "payload 'charge-v1-migratable' satisfies the worker contract for job 'charge' (consumer version 'v2'). payload #14d9ec1b0e7e. Applied migrations: v1->v2: rename 'amount' to 'amountCents'; v1->v2: migration declared.",
+      "appliedMigrations": [
+        "v1->v2: rename 'amount' to 'amountCents'",
+        "v1->v2: migration declared"
+      ]
+    },
+    {
+      "id": "charge-v1-missing-email",
+      "label": "Historical v1 charge without receipt email",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "consumerVersion": "v2",
+      "verdict": "fail",
+      "failingField": "customer.email",
+      "failingStep": "check-required-fields",
+      "dataFingerprint": "7d6e8b5502a6",
+      "comparison": "required field 'customer.email' (added in v2) is missing for job 'charge' at validation step 'check-required-fields'. Expected type 'string'. payload #bf1b418f7b3f.",
+      "appliedMigrations": [
+        "v1->v2: rename 'amount' to 'amountCents'",
+        "v1->v2: migration declared"
+      ],
+      "reason": "missing required field 'customer.email'"
+    },
+    {
+      "id": "charge-v2-wrong-type",
+      "label": "Current v2 charge with string amount",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "consumerVersion": "v2",
+      "verdict": "fail",
+      "failingField": "amountCents",
+      "failingStep": "check-field-types",
+      "dataFingerprint": "6a13af65c90f",
+      "comparison": "field 'amountCents' has type 'string' but the worker expects 'integer' for job 'charge' at validation step 'check-field-types'. payload #6a13af65c90f.",
+      "appliedMigrations": [],
+      "reason": "type mismatch at 'amountCents' (actual 'string', expected 'integer')"
+    },
+    {
+      "id": "charge-v2-extra-field",
+      "label": "Current v2 charge with unknown priority field",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "consumerVersion": "v2",
+      "verdict": "review",
+      "failingField": "priority",
+      "failingStep": "check-unknown-fields",
+      "dataFingerprint": "702fe0a1ce32",
+      "comparison": "unknown field 'priority' is present for job 'charge' but is not part of the worker contract. The worker may ignore or reject it. payload #702fe0a1ce32.",
+      "appliedMigrations": [],
+      "reason": "unknown field 'priority'"
+    },
+    {
+      "id": "charge-v1-legacy-note",
+      "label": "Historical v1 charge carrying a removed note",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "consumerVersion": "v2",
+      "verdict": "review",
+      "failingField": "legacyNote",
+      "failingStep": "check-removed-fields",
+      "dataFingerprint": "a31803eefb76",
+      "comparison": "field 'legacyNote' was removed in v2 but is still present in the historical payload for job 'charge'. The worker may ignore it. payload #79683c9a8c18.",
+      "appliedMigrations": [
+        "v1->v2: rename 'amount' to 'amountCents'",
+        "v1->v2: migration declared"
+      ],
+      "reason": "removed field 'legacyNote' still present"
+    }
+  ],
+  "reproductionTest": "import { test, expect } from 'vitest';\nimport fs from 'node:fs';\nimport path from 'node:path';\n\n// Reproduction for .stackfold/queue-compatibility.json.\n// Replays the checked-in historical payload fixtures against the recorded\n// verdicts. Payload values are read from fixture files at test time and are\n// never embedded here.\nconst root = process.env.STACKFOLD_QUEUE_ROOT || process.cwd();\nconst recorded = JSON.parse(\n  fs.readFileSync(\n    path.join(root, '.stackfold/queue-compatibility-results.json'),\n    'utf8'\n  )\n) as { payloads: Array<{ id: string; verdict: string; failingField: string | null; failingStep: string | null }> };\n\nfunction resultsById(id: string) {\n  const found = recorded.payloads.find(item => item.id === id);\n  if (!found) throw new Error(`No recorded payload '${id}'.`);\n  return found;\n}\n\n  test(\"queue verdict: Historical v1 charge without receipt email\", () => {\n    const recorded = resultsById(\"charge-v1-missing-email\");\n    expect(recorded.verdict).toBe(\"fail\");\n    expect(recorded.failingField).toBe(\"customer.email\");\n    expect(recorded.failingStep).toBe(\"check-required-fields\");\n  });\n\n  test(\"queue verdict: Current v2 charge with string amount\", () => {\n    const recorded = resultsById(\"charge-v2-wrong-type\");\n    expect(recorded.verdict).toBe(\"fail\");\n    expect(recorded.failingField).toBe(\"amountCents\");\n    expect(recorded.failingStep).toBe(\"check-field-types\");\n  });\n\n  test(\"queue verdict: Current v2 charge with unknown priority field\", () => {\n    const recorded = resultsById(\"charge-v2-extra-field\");\n    expect(recorded.verdict).toBe(\"review\");\n    expect(recorded.failingField).toBe(\"priority\");\n    expect(recorded.failingStep).toBe(\"check-unknown-fields\");\n  });\n\n  test(\"queue verdict: Historical v1 charge carrying a removed note\", () => {\n    const recorded = resultsById(\"charge-v1-legacy-note\");\n    expect(recorded.verdict).toBe(\"review\");\n    expect(recorded.failingField).toBe(\"legacyNote\");\n    expect(recorded.failingStep).toBe(\"check-removed-fields\");\n  });\n"
+}

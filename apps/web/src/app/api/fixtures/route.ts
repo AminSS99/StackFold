@@ -62,6 +62,20 @@ export async function GET() {
       frameworks: ['HMAC-SHA256', 'Signature Compatibility', 'Security Lab'],
     },
     {
+      id: 'queue-compatibility-failing',
+      name: 'Queue Compatibility Historical Mismatch',
+      description: 'Historical BullMQ v1 payloads replayed against a v2 worker contract with field-exact evidence',
+      path: path.resolve(process.cwd(), '../../fixtures/queue-compatibility-failing'),
+      frameworks: ['BullMQ', 'Queue Compatibility', 'Security Lab'],
+    },
+    {
+      id: 'queue-compatibility-passing',
+      name: 'Queue Compatibility Passing',
+      description: 'Historical BullMQ payloads that all satisfy the current worker contract',
+      path: path.resolve(process.cwd(), '../../fixtures/queue-compatibility-passing'),
+      frameworks: ['BullMQ', 'Queue Compatibility', 'Security Lab'],
+    },
+    {
       id: 'stackfold-self',
       name: 'Stackfold Monorepo (Self Scan)',
       description: 'The Stackfold visual project intelligence codebase itself',

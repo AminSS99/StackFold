@@ -40,6 +40,10 @@ export const NODE_DIMENSIONS: Record<NodeType, { width: number; height: number }
   signer: { width: 250, height: 90 },
   verifier: { width: 250, height: 90 },
   signature_vector: { width: 280, height: 95 },
+  queue: { width: 250, height: 90 },
+  queue_producer: { width: 250, height: 90 },
+  queue_consumer: { width: 250, height: 90 },
+  job_payload: { width: 280, height: 95 },
 };
 
 export function computeGraphLayout(

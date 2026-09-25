@@ -113,6 +113,10 @@ const ALL_NODE_TYPES: NodeType[] = [
   'signer',
   'verifier',
   'signature_vector',
+  'queue',
+  'queue_producer',
+  'queue_consumer',
+  'job_payload',
 ];
 
 let activeScanAbortController: AbortController | null = null;

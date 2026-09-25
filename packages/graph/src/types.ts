@@ -22,7 +22,11 @@ export type NodeType =
   | 'cache_layer'
   | 'signer'
   | 'verifier'
-  | 'signature_vector';
+  | 'signature_vector'
+  | 'queue'
+  | 'queue_producer'
+  | 'queue_consumer'
+  | 'job_payload';
 
 export type EdgeType =
   | 'contains'
@@ -45,7 +49,10 @@ export type EdgeType =
   | 'serves'
   | 'exposes_private_data'
   | 'signs'
-  | 'verifies';
+  | 'verifies'
+  | 'enqueues'
+  | 'consumes'
+  | 'replays';
 
 export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Layers, Globe, Database, Cloud, KeyRound, FileCode, Component, Boxes, CloudCog, HardDrive, GitCompareArrows, ShieldAlert, Fingerprint, GitPullRequestArrow, ShieldCheck, Activity, UserRound, ServerCog, PenLine, Stamp, ListChecks } from 'lucide-react';
+import { X, Layers, Globe, Database, Cloud, KeyRound, FileCode, Component, Boxes, CloudCog, HardDrive, GitCompareArrows, ShieldAlert, Fingerprint, GitPullRequestArrow, ShieldCheck, Activity, UserRound, ServerCog, PenLine, Stamp, ListChecks, Inbox, Upload, Download } from 'lucide-react';
 
 interface GraphLegendProps {
   isOpen: boolean;
@@ -28,6 +28,10 @@ const TAXONOMY = [
   { label: 'Signers', icon: <PenLine className="w-3.5 h-3.5 text-sky-400" />, desc: 'Request signing implementations' },
   { label: 'Verifiers', icon: <Stamp className="w-3.5 h-3.5 text-indigo-400" />, desc: 'Signature verification endpoints' },
   { label: 'Signature Vectors', icon: <ListChecks className="w-3.5 h-3.5 text-emerald-400" />, desc: 'Normalization test cases' },
+  { label: 'Queues', icon: <Inbox className="w-3.5 h-3.5 text-yellow-400" />, desc: 'BullMQ queue boundaries' },
+  { label: 'Queue Producers', icon: <Upload className="w-3.5 h-3.5 text-sky-400" />, desc: 'Historical job writers' },
+  { label: 'Queue Consumers', icon: <Download className="w-3.5 h-3.5 text-indigo-400" />, desc: 'Current worker contracts' },
+  { label: 'Job Payloads', icon: <FileCode className="w-3.5 h-3.5 text-emerald-400" />, desc: 'Historical replay cases' },
 ];
 
 export function GraphLegend({ isOpen, onClose }: GraphLegendProps) {

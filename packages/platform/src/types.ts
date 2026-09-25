@@ -57,6 +57,20 @@ export interface SignatureCompatibilityPlatformPayload {
   code?: string;
 }
 
+export interface QueueCompatibilityPlatformRequest {
+  rootPath?: string;
+  fixture?: string;
+}
+
+export interface QueueCompatibilityPlatformPayload {
+  success: boolean;
+  result?: unknown;
+  source?: string;
+  configPath?: string;
+  error?: string;
+  code?: string;
+}
+
 export interface PlatformAdapter {
   readonly id: 'web' | 'tauri' | 'mock';
   isDesktop(): boolean;
@@ -85,4 +99,6 @@ export interface PlatformAdapter {
   runCacheIsolationProbe(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload>;
   loadSignatureCompatibilityRecorded(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload>;
   runSignatureCompatibilityProbe(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload>;
+  loadQueueCompatibilityRecorded(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload>;
+  runQueueCompatibilityCheck(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload>;
 }

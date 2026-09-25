@@ -380,6 +380,7 @@ export function CacheIsolationLab() {
             <nav className="hidden items-center gap-1 text-[10px] font-medium md:flex" aria-label="Security Lab modules">
               <span className="rounded-md bg-[#f6c945] px-2.5 py-1.5 font-bold text-[#070806]">Cache Isolation</span>
               <Link href="/security-lab/signature" className="rounded-md px-2.5 py-1.5 text-[#a5aa9b] transition-colors hover:text-[#f6f7f2]">Signature</Link>
+              <Link href="/security-lab/queue" className="rounded-md px-2.5 py-1.5 text-[#a5aa9b] transition-colors hover:text-[#f6f7f2]">Queue</Link>
             </nav>
             <div className="hidden items-center rounded-lg border border-[#34382e] p-0.5 text-[10px] font-medium sm:flex" role="tablist" aria-label="Result source">
               <button role="tab" aria-selected={sourceMode === 'project'} onClick={() => setSourceMode('project')} className={clsx('rounded-md px-2.5 py-1.5 transition-colors', sourceMode === 'project' ? 'bg-[#f6c945] text-[#070806] font-bold' : 'text-[#a5aa9b] hover:text-[#f6f7f2]')}>Selected project</button>

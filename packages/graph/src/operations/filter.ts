@@ -50,6 +50,10 @@ export function filterGraph(graph: ProjectGraph, options: GraphFilterOptions): {
       'signer',
       'verifier',
       'signature_vector',
+      'queue',
+      'queue_producer',
+      'queue_consumer',
+      'job_payload',
     ]);
     nodes = nodes.filter(n => coarseTypes.has(n.type));
     const activeNodeIds = new Set(nodes.map(n => n.id));

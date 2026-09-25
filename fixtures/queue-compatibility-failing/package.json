@@ -1,0 +1,10 @@
+{
+  "name": "queue-compatibility-failing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stackfold Queue Compatibility failing fixture: v2 worker rejects or questions historical v1 payloads",
+  "type": "module",
+  "dependencies": {
+    "bullmq": "^5.0.0"
+  }
+}

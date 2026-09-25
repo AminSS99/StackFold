@@ -758,6 +758,8 @@ pub mod commands {
             "cache-isolation-vulnerable",
             "signature-compatibility-vulnerable",
             "signature-compatibility-passing",
+            "queue-compatibility-failing",
+            "queue-compatibility-passing",
             "preview-fence-vercel-supabase",
             "tx-escape-prisma",
             "scopepatch-idtrace",
@@ -1032,6 +1034,87 @@ pub mod commands {
             "source": format!("live:{}", source),
         }))
     }
+
+    #[tauri::command]
+    pub fn load_queue_compatibility_recorded(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let config_candidates = [
+            ".stackfold/queue-compatibility.json",
+            "stackfold.queue-compatibility.json",
+        ];
+        let config_path = read_security_json(&root, &config_candidates)
+            .map(|(p, _)| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if config_path.is_empty() {
+            return Err(format!(
+                "No Queue Compatibility configuration found for '{}'. Add .stackfold/queue-compatibility.json.",
+                source
+            ));
+        }
+        let result_candidates = [
+            ".stackfold/queue-compatibility-results.json",
+            "stackfold.queue-compatibility-results.json",
+        ];
+        match read_security_json(&root, &result_candidates) {
+            Some((_, content)) => {
+                let result: serde_json::Value =
+                    serde_json::from_str(&content).map_err(|e| e.to_string())?;
+                Ok(serde_json::json!({
+                    "success": true,
+                    "result": result,
+                    "source": format!("recorded:{}", source),
+                    "configPath": config_path,
+                }))
+            }
+            None => Err(format!(
+                "No recorded Queue Compatibility result found for '{}'. Run a live check first.",
+                source
+            )),
+        }
+    }
+
+    #[tauri::command]
+    pub async fn run_queue_compatibility_probe(
+        root_path: Option<String>,
+        fixture: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        let (root, source) = resolve_security_target(root_path, fixture)?;
+        let sidecar_path = find_scanner_sidecar()?;
+        let node_bin = find_node_binary()?;
+        let root_str = root.to_string_lossy().to_string();
+        let output = std::process::Command::new(&node_bin)
+            .arg(&sidecar_path)
+            .arg("queue-compatibility")
+            .arg(&root_str)
+            .output()
+            .map_err(|e| format!("Failed to spawn scanner sidecar: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            let detail = if stderr.is_empty() {
+                format!("exit code: {:?}", output.status.code())
+            } else {
+                stderr.chars().take(400).collect()
+            };
+            return Ok(serde_json::json!({
+                "success": false,
+                "error": format!("Queue Compatibility check failed: {}", detail),
+                "code": "CHECK_FAILED",
+                "source": source,
+            }));
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let last_line = stdout.lines().last().unwrap_or("").trim();
+        let result: serde_json::Value =
+            serde_json::from_str(last_line).map_err(|e| format!("Invalid probe output: {}", e))?;
+        Ok(serde_json::json!({
+            "success": true,
+            "result": result,
+            "source": format!("live:{}", source),
+        }))
+    }
 }
 
 pub fn run() {
@@ -1057,7 +1140,9 @@ pub fn run() {
             commands::load_cache_isolation_recorded,
             commands::run_cache_isolation_probe,
             commands::load_signature_compatibility_recorded,
-            commands::run_signature_compatibility_probe
+            commands::run_signature_compatibility_probe,
+            commands::load_queue_compatibility_recorded,
+            commands::run_queue_compatibility_probe
         ])
         .run(tauri::generate_context!())
         .expect("error while running Stackfold desktop application");

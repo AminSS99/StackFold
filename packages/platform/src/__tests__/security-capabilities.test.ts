@@ -23,6 +23,12 @@ describe('Security platform capabilities (Cache Isolation selection)', () => {
     expect(sigRecorded.success).toBe(false);
     const sigLive = await adapter.runSignatureCompatibilityProbe({ rootPath: '/tmp/project' });
     expect(sigLive.success).toBe(false);
+    const queueRecorded = await adapter.loadQueueCompatibilityRecorded({ fixture: 'queue-compatibility-failing' });
+    expect(queueRecorded.success).toBe(false);
+    expect(queueRecorded.code).toBe('MOCK_UNAVAILABLE');
+    const queueLive = await adapter.runQueueCompatibilityCheck({ rootPath: '/tmp/project' });
+    expect(queueLive.success).toBe(false);
+    expect(queueLive.code).toBe('MOCK_UNAVAILABLE');
   });
 
   it('tauri adapter without a desktop bridge returns actionable unavailability', async () => {
@@ -34,6 +40,12 @@ describe('Security platform capabilities (Cache Isolation selection)', () => {
     const live = await adapter.runCacheIsolationProbe({ fixture: 'cache-isolation-vulnerable' });
     expect(live.success).toBe(false);
     expect(live.code).toBe('TAURI_NOT_INITIALIZED');
+    const queueRecorded = await adapter.loadQueueCompatibilityRecorded({ rootPath: '/tmp/project' });
+    expect(queueRecorded.success).toBe(false);
+    expect(queueRecorded.code).toBe('TAURI_NOT_INITIALIZED');
+    const queueLive = await adapter.runQueueCompatibilityCheck({ fixture: 'queue-compatibility-failing' });
+    expect(queueLive.success).toBe(false);
+    expect(queueLive.code).toBe('TAURI_NOT_INITIALIZED');
   });
 
   it('web adapter targets the explicit platform capability endpoints', async () => {
@@ -49,8 +61,11 @@ describe('Security platform capabilities (Cache Isolation selection)', () => {
       await adapter.runCacheIsolationProbe({ fixture: 'cache-isolation-vulnerable' });
       await adapter.loadSignatureCompatibilityRecorded({ rootPath: '/tmp/project' });
       await adapter.runSignatureCompatibilityProbe({ fixture: 'signature-compatibility-passing' });
+      await adapter.loadQueueCompatibilityRecorded({ rootPath: '/tmp/project' });
+      await adapter.runQueueCompatibilityCheck({ fixture: 'queue-compatibility-failing' });
       expect(seen.some(url => url.includes('/api/security/cache-isolation?rootPath='))).toBe(true);
       expect(seen.some(url => url.includes('/api/security/signature-compatibility?rootPath='))).toBe(true);
+      expect(seen.some(url => url.includes('/api/security/queue-compatibility?rootPath='))).toBe(true);
       // Live probes route through the platform capability, never raw browser fs/process.
       expect(seen.filter(url => url.includes('/api/security/cache-isolation')).length).toBeGreaterThanOrEqual(2);
     } finally {

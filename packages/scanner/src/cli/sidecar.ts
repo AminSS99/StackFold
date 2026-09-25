@@ -141,6 +141,24 @@ async function main() {
     }
   }
 
+  if (command === 'queue-compatibility') {
+    try {
+      const rootPath = payloadArg || process.cwd();
+      const mod = await import('../security/queue-compatibility');
+      const { config } = mod.loadQueueCompatibilityConfig(rootPath);
+      const result = await mod.runQueueCompatibilityCheck(config, { rootPath });
+      // Always exit 0 on a completed check: incompatible payloads are
+      // reported in the payload, not via the process exit code (unlike the
+      // CI CLI).
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.exit(0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`queue-compatibility failed: ${msg}\n`);
+      process.exit(1);
+    }
+  }
+
   send({ type: 'error', error: `Unknown command: ${command}`, code: 'UNKNOWN_COMMAND' });
   process.exit(1);
 }

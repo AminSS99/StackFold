@@ -5,6 +5,7 @@ import { scanRepository } from '../index';
 import { formatFindings, type FindingReportFormat } from '../reporting/findings';
 import { loadCacheIsolationConfig, runCacheIsolationProbe } from '../security/cache-isolation';
 import { loadSignatureCompatibilityConfig, runSignatureCompatibilityCheck } from '../security/signature-compatibility';
+import { loadQueueCompatibilityConfig, runQueueCompatibilityCheck } from '../security/queue-compatibility';
 
 function valueAfter(args: string[], flag: string): string | undefined {
   const index = args.indexOf(flag);
@@ -55,12 +56,33 @@ async function main() {
     if (checkResult.vectors.some(vector => vector.status === 'fail')) process.exitCode = 1;
     return;
   }
+  if (args[0] === 'queue-compatibility') {
+    const rootPath = args[1];
+    if (!rootPath || args.includes('--help')) {
+      process.stdout.write('Usage: stackfold queue-compatibility <repository> [--out result.json]\n');
+      process.exit(rootPath ? 0 : 1);
+    }
+    const canonicalRoot = path.resolve(rootPath);
+    const { config } = loadQueueCompatibilityConfig(canonicalRoot);
+    const queueResult = await runQueueCompatibilityCheck(config, { rootPath: canonicalRoot });
+    const output = `${JSON.stringify(queueResult, null, 2)}\n`;
+    const outputPath = valueAfter(args, '--out');
+    if (outputPath) {
+      const resolvedOutput = path.resolve(outputPath);
+      fs.writeFileSync(resolvedOutput, output, { encoding: 'utf8', mode: 0o600 });
+      process.stdout.write(`Queue Compatibility wrote privacy-safe results to ${resolvedOutput}\n`);
+    } else {
+      process.stdout.write(output);
+    }
+    if (queueResult.payloads.some(payload => payload.verdict === 'fail')) process.exitCode = 1;
+    return;
+  }
   const rootPath = args.find(arg => !arg.startsWith('-'));
   const format = (valueAfter(args, '--format') || 'terminal') as FindingReportFormat;
   const supported: FindingReportFormat[] = ['terminal', 'json', 'github-actions', 'circleci'];
 
   if (!rootPath || args.includes('--help')) {
-    process.stdout.write('Usage: stackfold <repository> [--format terminal|json|github-actions|circleci] [--fail-on-findings]\n       stackfold cache-isolation <repository> [--out result.json] [--headed]\n       stackfold signature-compatibility <repository> [--out result.json]\n');
+    process.stdout.write('Usage: stackfold <repository> [--format terminal|json|github-actions|circleci] [--fail-on-findings]\n       stackfold cache-isolation <repository> [--out result.json] [--headed]\n       stackfold signature-compatibility <repository> [--out result.json]\n       stackfold queue-compatibility <repository> [--out result.json]\n');
     process.exit(rootPath ? 0 : 1);
   }
   if (!supported.includes(format)) {
