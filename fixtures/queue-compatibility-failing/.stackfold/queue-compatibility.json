@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "queues": [
+    {
+      "id": "billing",
+      "queue": "billing",
+      "connection": "redis",
+      "producer": { "file": "src/producer.js", "function": "enqueueCharge" },
+      "consumer": { "file": "src/worker.js", "function": "processCharge", "version": "v2" },
+      "payloadVersions": ["v1", "v2"],
+      "schema": {
+        "strict": false,
+        "fields": [
+          { "path": "chargeId", "type": "string", "required": true },
+          { "path": "amountCents", "type": "integer", "required": true, "renamedFrom": "amount" },
+          { "path": "currency", "type": "string", "required": true },
+          { "path": "customer.id", "type": "string", "required": true },
+          { "path": "customer.email", "type": "string", "required": true, "addedIn": "v2" },
+          { "path": "legacyNote", "type": "string", "required": false, "removedIn": "v2" },
+          { "path": "cardToken", "type": "string", "required": false },
+          { "path": "metadata", "type": "object", "required": false }
+        ]
+      },
+      "migrations": [
+        { "from": "v1", "to": "v2", "renames": { "amount": "amountCents" } }
+      ],
+      "redactPaths": ["cardToken"]
+    }
+  ],
+  "payloads": [
+    {
+      "id": "charge-v2-ok",
+      "label": "Current v2 charge",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "dataRef": ".stackfold/queue-payloads/charge-v2-ok.json"
+    },
+    {
+      "id": "charge-v1-migratable",
+      "label": "Historical v1 charge with declared rename",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "dataRef": ".stackfold/queue-payloads/charge-v1-migratable.json"
+    },
+    {
+      "id": "charge-v1-missing-email",
+      "label": "Historical v1 charge without receipt email",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "dataRef": ".stackfold/queue-payloads/charge-v1-missing-email.json"
+    },
+    {
+      "id": "charge-v2-wrong-type",
+      "label": "Current v2 charge with string amount",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "dataRef": ".stackfold/queue-payloads/charge-v2-wrong-type.json"
+    },
+    {
+      "id": "charge-v2-extra-field",
+      "label": "Current v2 charge with unknown priority field",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "dataRef": ".stackfold/queue-payloads/charge-v2-extra-field.json"
+    },
+    {
+      "id": "charge-v1-legacy-note",
+      "label": "Historical v1 charge carrying a removed note",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "dataRef": ".stackfold/queue-payloads/charge-v1-legacy-note.json"
+    }
+  ]
+}

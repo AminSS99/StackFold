@@ -21,6 +21,23 @@ export const nodeTypeEnum = z.enum([
   'database_model',
   'environment_variable',
   'external_service',
+  'deployment_environment',
+  'cloud_resource',
+  'change_event',
+  'risk_boundary',
+  'api_operation',
+  'permission_scope',
+  'identity_domain',
+  'security_probe',
+  'browser_session',
+  'cache_layer',
+  'signer',
+  'verifier',
+  'signature_vector',
+  'queue',
+  'queue_producer',
+  'queue_consumer',
+  'job_payload',
 ]);
 
 export const edgeTypeEnum = z.enum([
@@ -33,6 +50,21 @@ export const edgeTypeEnum = z.enum([
   'depends_on',
   'configured_by',
   'communicates_with',
+  'binds_to',
+  'may_impact',
+  'violates',
+  'traces_to',
+  'requires',
+  'declares',
+  'crosses',
+  'warms',
+  'serves',
+  'exposes_private_data',
+  'signs',
+  'verifies',
+  'enqueues',
+  'consumes',
+  'replays',
 ]);
 
 export const confidenceLevelEnum = z.enum([
@@ -94,6 +126,26 @@ export const scanDiagnosticSchema = z.object({
   details: z.record(z.unknown()).optional(),
 });
 
+export const findingSeverityEnum = z.enum(['critical', 'high', 'medium', 'low', 'info']);
+export const findingStatusEnum = z.enum(['confirmed', 'uncertain']);
+
+export const stackfoldFindingSchema = z.object({
+  id: z.string().min(1),
+  ruleId: z.string().min(1),
+  severity: findingSeverityEnum,
+  status: findingStatusEnum,
+  title: z.string().min(1),
+  affectedNodeIds: z.array(z.string().min(1)).min(1),
+  sourceLocation: z.object({
+    filePath: z.string().min(1),
+    sourceRange: sourceRangeSchema.optional(),
+  }),
+  evidence: z.array(evidenceSchema).min(1),
+  explanation: z.string().min(1),
+  suggestedAction: z.string().min(1),
+  metadata: z.record(z.unknown()).optional(),
+});
+
 export const graphStatsSchema = z.object({
   nodeCount: z.number().int().min(0),
   edgeCount: z.number().int().min(0),
@@ -116,6 +168,7 @@ export const projectGraphSchema = z.object({
   nodes: z.array(graphNodeSchema),
   edges: z.array(graphEdgeSchema),
   diagnostics: z.array(scanDiagnosticSchema),
+  findings: z.array(stackfoldFindingSchema).default([]),
 });
 
 export function validateProjectGraph(data: unknown): ProjectGraph {

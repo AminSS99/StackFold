@@ -33,6 +33,12 @@ target/
 .turbo/
 .cache/
 .stackfold/
+# Allow fixture manifests and recorded results (source for scanner tests)
+!fixtures/**/.stackfold/
+!fixtures/**/.stackfold/**
+
+# Generated local output (screenshots, probe artifacts)
+output/
 
 # Environment files (NEVER commit secrets)
 .env

@@ -1,0 +1,7 @@
+{
+  "name": "signature-compatibility-vulnerable",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stackfold Signature Compatibility vulnerable fixture: signer and verifier disagree on normalization",
+  "type": "module"
+}

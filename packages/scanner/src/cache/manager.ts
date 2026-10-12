@@ -27,6 +27,10 @@ export function computeProjectFingerprint(rootPath: string, keyFiles: string[] =
     'prisma/schema.prisma',
     'schema.prisma',
     '.env.example',
+    '.stackfold/preview-fence.json',
+    'stackfold.preview-fence.json',
+    '.stackfold/drift-impact.json',
+    'stackfold.drift-impact.json',
     ...keyFiles,
   ];
 

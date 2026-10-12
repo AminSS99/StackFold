@@ -106,6 +106,59 @@ async function main() {
     }
   }
 
+  if (command === 'cache-isolation') {
+    try {
+      const rootPath = payloadArg || process.cwd();
+      const { loadCacheIsolationConfig, runCacheIsolationProbe } = await import('../security/cache-isolation');
+      const { config } = loadCacheIsolationConfig(rootPath);
+      const result = await runCacheIsolationProbe(config);
+      // Privacy-safe single-line JSON for Tauri sidecar consumption.
+      // Always exit 0 on a completed probe: leaks are reported in the
+      // payload, not via the process exit code (unlike the CI CLI).
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.exit(0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`cache-isolation failed: ${msg}\n`);
+      process.exit(1);
+    }
+  }
+
+  if (command === 'signature-compatibility') {
+    try {
+      const rootPath = payloadArg || process.cwd();
+      const mod = await import('../security/signature-compatibility');
+      const { config } = mod.loadSignatureCompatibilityConfig(rootPath);
+      const result = await mod.runSignatureCompatibilityCheck(config);
+      // Always exit 0 on a completed check: mismatches are reported in the
+      // payload, not via the process exit code (unlike the CI CLI).
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.exit(0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`signature-compatibility failed: ${msg}\n`);
+      process.exit(1);
+    }
+  }
+
+  if (command === 'queue-compatibility') {
+    try {
+      const rootPath = payloadArg || process.cwd();
+      const mod = await import('../security/queue-compatibility');
+      const { config } = mod.loadQueueCompatibilityConfig(rootPath);
+      const result = await mod.runQueueCompatibilityCheck(config, { rootPath });
+      // Always exit 0 on a completed check: incompatible payloads are
+      // reported in the payload, not via the process exit code (unlike the
+      // CI CLI).
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.exit(0);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`queue-compatibility failed: ${msg}\n`);
+      process.exit(1);
+    }
+  }
+
   send({ type: 'error', error: `Unknown command: ${command}`, code: 'UNKNOWN_COMMAND' });
   process.exit(1);
 }

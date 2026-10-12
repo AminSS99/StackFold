@@ -1,0 +1,6 @@
+{
+  "chargeId": "ch_test_004",
+  "amountCents": "1999",
+  "currency": "USD",
+  "customer": { "id": "cus_test_126", "email": "receipts@example.com" }
+}

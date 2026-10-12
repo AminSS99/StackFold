@@ -1,9 +1,15 @@
 import type {
+  CacheIsolationPlatformPayload,
+  CacheIsolationPlatformRequest,
   PlatformAdapter,
   PreferredEditor,
+  QueueCompatibilityPlatformPayload,
+  QueueCompatibilityPlatformRequest,
   RecentProjectEntry,
   ScanPlatformParams,
   ScanPlatformResult,
+  SignatureCompatibilityPlatformPayload,
+  SignatureCompatibilityPlatformRequest,
 } from '../types';
 import type { PathValidationResult, ScanProgress, StackfoldScanArtifact } from '@stackfold/scanner';
 
@@ -322,6 +328,102 @@ export class TauriPlatformAdapter implements PlatformAdapter {
     }
     if (typeof document !== 'undefined') {
       document.title = title;
+    }
+  }
+
+  async loadCacheIsolationRecorded(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Recorded results require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<CacheIsolationPlatformPayload>('load_cache_isolation_recorded', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_RECORDED_LOAD_FAILED' };
+    }
+  }
+
+  async runCacheIsolationProbe(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Live probes require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<CacheIsolationPlatformPayload>('run_cache_isolation_probe', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_PROBE_FAILED' };
+    }
+  }
+
+  async loadSignatureCompatibilityRecorded(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Recorded results require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<SignatureCompatibilityPlatformPayload>('load_signature_compatibility_recorded', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_RECORDED_LOAD_FAILED' };
+    }
+  }
+
+  async runSignatureCompatibilityProbe(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Live checks require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<SignatureCompatibilityPlatformPayload>('run_signature_compatibility_probe', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_PROBE_FAILED' };
+    }
+  }
+
+  async loadQueueCompatibilityRecorded(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Recorded results require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<QueueCompatibilityPlatformPayload>('load_queue_compatibility_recorded', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_RECORDED_LOAD_FAILED' };
+    }
+  }
+
+  async runQueueCompatibilityCheck(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    const invoke = getTauriInvoke();
+    if (!invoke) {
+      return { success: false, error: 'Desktop bridge unavailable. Live checks require the Tauri runtime.', code: 'TAURI_NOT_INITIALIZED' };
+    }
+    try {
+      return await invoke<QueueCompatibilityPlatformPayload>('run_queue_compatibility_probe', {
+        rootPath: request.rootPath ?? null,
+        fixture: request.fixture ?? null,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg, code: 'DESKTOP_PROBE_FAILED' };
     }
   }
 }

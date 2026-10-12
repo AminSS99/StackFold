@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-15T12:45:22.357Z",
+  "environment": "production-build-fixture",
+  "baseUrl": "http://127.0.0.1:4178",
+  "authenticationKind": "header",
+  "authenticationHeader": "x-stackfold-test-session",
+  "probes": [
+    {
+      "id": "private-html",
+      "label": "HTML dashboard",
+      "kind": "html",
+      "path": "/dashboard",
+      "status": "leak",
+      "sessionAStatus": 200,
+      "sessionBStatus": 200,
+      "cacheStatusA": "MISS",
+      "cacheStatusB": "HIT",
+      "cacheControl": "public, max-age=60",
+      "age": "2",
+      "durationMs": 1160,
+      "markerFingerprint": "9433527b7de4"
+    },
+    {
+      "id": "private-json",
+      "label": "JSON identity endpoint",
+      "kind": "json",
+      "path": "/api/me",
+      "status": "isolated",
+      "sessionAStatus": 200,
+      "sessionBStatus": 200,
+      "cacheStatusA": "BYPASS",
+      "cacheStatusB": "BYPASS",
+      "cacheControl": "private, no-store",
+      "durationMs": 1127,
+      "markerFingerprint": "9433527b7de4"
+    },
+    {
+      "id": "production-build",
+      "label": "Production build route",
+      "kind": "production_build",
+      "path": "/production/dashboard",
+      "status": "isolated",
+      "sessionAStatus": 200,
+      "sessionBStatus": 200,
+      "cacheStatusA": "MISS",
+      "cacheStatusB": "MISS",
+      "cacheControl": "private, max-age=30",
+      "durationMs": 1117,
+      "markerFingerprint": "9433527b7de4"
+    }
+  ],
+  "reproductionTest": "import { test, expect } from '@playwright/test';\n\ntest('cache isolation: private data is not shared across sessions', async ({ browser }) => {\n  const baseUrl = process.env.STACKFOLD_CACHE_BASE_URL || \"http://127.0.0.1:4178\";\n  const sessionA = await browser.newContext({\n    extraHTTPHeaders: { \"x-stackfold-test-session\": process.env.STACKFOLD_SESSION_A! },\n  });\n  const sessionB = await browser.newContext({\n    extraHTTPHeaders: { \"x-stackfold-test-session\": process.env.STACKFOLD_SESSION_B! },\n  });\n\n  // HTML dashboard (html)\n  const warmprivate_html = await sessionA.request.get(baseUrl + \"/dashboard\");\n  expect(warmprivate_html.ok()).toBeTruthy();\n  const checkprivate_html = await sessionB.request.get(baseUrl + \"/dashboard\");\n  expect(checkprivate_html.ok()).toBeTruthy();\n  await expect(checkprivate_html.text()).resolves.not.toContain(process.env.STACKFOLD_MARKER_A!);\n\n  // JSON identity endpoint (json)\n  const warmprivate_json = await sessionA.request.get(baseUrl + \"/api/me\");\n  expect(warmprivate_json.ok()).toBeTruthy();\n  const checkprivate_json = await sessionB.request.get(baseUrl + \"/api/me\");\n  expect(checkprivate_json.ok()).toBeTruthy();\n  await expect(checkprivate_json.text()).resolves.not.toContain(process.env.STACKFOLD_MARKER_A!);\n\n  // Production build route (production_build)\n  const warmproduction_build = await sessionA.request.get(baseUrl + \"/production/dashboard\");\n  expect(warmproduction_build.ok()).toBeTruthy();\n  const checkproduction_build = await sessionB.request.get(baseUrl + \"/production/dashboard\");\n  expect(checkproduction_build.ok()).toBeTruthy();\n  await expect(checkproduction_build.text()).resolves.not.toContain(process.env.STACKFOLD_MARKER_A!);\n\n  await sessionA.close();\n  await sessionB.close();\n});\n"
+}

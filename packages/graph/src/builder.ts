@@ -8,6 +8,7 @@ import type {
   ConfidenceLevel,
   Evidence,
   SourceRange,
+  StackfoldFinding,
 } from './types';
 import { validateProjectGraph } from './schema';
 
@@ -24,6 +25,7 @@ export class GraphBuilder {
   private nodes = new Map<string, GraphNode>();
   private edges = new Map<string, GraphEdge>();
   private diagnostics: ScanDiagnostic[] = [];
+  private findings = new Map<string, StackfoldFinding>();
 
   public addNode(node: GraphNode): this {
     if (this.nodes.has(node.id)) {
@@ -105,6 +107,15 @@ export class GraphBuilder {
     return this;
   }
 
+  public addFinding(finding: StackfoldFinding): this {
+    this.findings.set(finding.id, finding);
+    return this;
+  }
+
+  public getFindings(): StackfoldFinding[] {
+    return Array.from(this.findings.values());
+  }
+
   public getNode(id: string): GraphNode | undefined {
     return this.nodes.get(id);
   }
@@ -165,6 +176,23 @@ export class GraphBuilder {
       database_model: 0,
       environment_variable: 0,
       external_service: 0,
+      deployment_environment: 0,
+      cloud_resource: 0,
+      change_event: 0,
+      risk_boundary: 0,
+      api_operation: 0,
+      permission_scope: 0,
+      identity_domain: 0,
+      security_probe: 0,
+      browser_session: 0,
+      cache_layer: 0,
+      signer: 0,
+      verifier: 0,
+      signature_vector: 0,
+      queue: 0,
+      queue_producer: 0,
+      queue_consumer: 0,
+      job_payload: 0,
     };
 
     const initialEdgeCounts: Record<EdgeType, number> = {
@@ -177,6 +205,21 @@ export class GraphBuilder {
       depends_on: 0,
       configured_by: 0,
       communicates_with: 0,
+      binds_to: 0,
+      may_impact: 0,
+      violates: 0,
+      traces_to: 0,
+      requires: 0,
+      declares: 0,
+      crosses: 0,
+      warms: 0,
+      serves: 0,
+      exposes_private_data: 0,
+      signs: 0,
+      verifies: 0,
+      enqueues: 0,
+      consumes: 0,
+      replays: 0,
     };
 
     const nodeTypeCounts = this.getNodes().reduce((acc, n) => {
@@ -209,6 +252,7 @@ export class GraphBuilder {
       nodes: this.getNodes(),
       edges: validEdges,
       diagnostics: this.diagnostics,
+      findings: this.getFindings(),
     };
 
     return validateProjectGraph(graph);

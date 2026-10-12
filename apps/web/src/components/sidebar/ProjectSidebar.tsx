@@ -17,6 +17,16 @@ import {
   Clock,
   FileText,
   SlidersHorizontal,
+  CloudCog,
+  HardDrive,
+  GitCompareArrows,
+  ShieldAlert,
+  Fingerprint,
+  GitPullRequestArrow,
+  ShieldCheck,
+  Activity,
+  UserRound,
+  ServerCog,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
@@ -30,9 +40,23 @@ const NODE_TYPE_ITEMS: Array<{ type: NodeType; label: string; icon: React.ReactN
   { type: 'environment_variable', label: 'Environment Vars', icon: <KeyRound className="w-3.5 h-3.5" />, color: 'text-amber-400' },
   { type: 'source_module', label: 'Source Modules', icon: <FileCode className="w-3.5 h-3.5" />, color: 'text-slate-400' },
   { type: 'component', label: 'Components', icon: <ComponentIcon className="w-3.5 h-3.5" />, color: 'text-violet-400' },
+  { type: 'deployment_environment', label: 'Environments', icon: <CloudCog className="w-3.5 h-3.5" />, color: 'text-violet-400' },
+  { type: 'cloud_resource', label: 'Cloud Resources', icon: <HardDrive className="w-3.5 h-3.5" />, color: 'text-rose-400' },
+  { type: 'change_event', label: 'Upstream Changes', icon: <GitCompareArrows className="w-3.5 h-3.5" />, color: 'text-orange-400' },
+  { type: 'risk_boundary', label: 'Risk Boundaries', icon: <ShieldAlert className="w-3.5 h-3.5" />, color: 'text-red-400' },
+  { type: 'api_operation', label: 'API Operations', icon: <GitPullRequestArrow className="w-3.5 h-3.5" />, color: 'text-sky-400' },
+  { type: 'permission_scope', label: 'Permission Scopes', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'text-amber-400' },
+  { type: 'identity_domain', label: 'Identity Domains', icon: <Fingerprint className="w-3.5 h-3.5" />, color: 'text-fuchsia-400' },
+  { type: 'security_probe', label: 'Security Probes', icon: <Activity className="w-3.5 h-3.5" />, color: 'text-emerald-400' },
+  { type: 'browser_session', label: 'Browser Sessions', icon: <UserRound className="w-3.5 h-3.5" />, color: 'text-indigo-400' },
+  { type: 'cache_layer', label: 'Cache Layers', icon: <ServerCog className="w-3.5 h-3.5" />, color: 'text-yellow-400' },
 ];
 
-export function ProjectSidebar() {
+interface ProjectSidebarProps {
+  className?: string;
+}
+
+export function ProjectSidebar({ className }: ProjectSidebarProps) {
   const scan = useStackfoldStore(s => s.scan);
   const isLoading = useStackfoldStore(s => s.isLoading);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
@@ -62,17 +86,17 @@ export function ProjectSidebar() {
   const nodeCounts = rawGraph?.metadata.stats.nodeTypeCounts || ({} as Record<NodeType, number>);
 
   return (
-    <aside className="w-72 bg-[#0c0e16] border-r border-[#1c2233] flex flex-col h-full select-none text-xs">
+    <aside className={clsx('w-[272px] shrink-0 bg-[#0d0f0c] border-r border-[#2a2d24] flex flex-col h-full select-none text-xs', className)} aria-label="Graph filters">
       {/* Current Project Header */}
-      <div className="p-4 border-b border-[#1c2233] space-y-3">
+      <div className="p-4 border-b border-[#2a2d24] space-y-3">
         <div className="flex items-center justify-between">
           <span className="font-semibold text-slate-200 flex items-center gap-1.5 text-[13px] truncate">
-            <FolderGit2 className="w-4 h-4 text-indigo-400 shrink-0" />
+            <FolderGit2 className="w-4 h-4 text-[#f6c945] shrink-0" />
             <span className="truncate">{rawGraph.metadata.projectName}</span>
           </span>
           <button
             onClick={() => setOnboardingModalOpen(true)}
-            className="text-[11px] text-indigo-400 hover:text-indigo-300 underline shrink-0"
+            className="text-[11px] text-[#f6c945] hover:text-[#ffda67] underline shrink-0"
           >
             Change
           </button>
@@ -85,20 +109,20 @@ export function ProjectSidebar() {
         <button
           onClick={handleRescan}
           disabled={isLoading}
-          className="w-full py-2 px-3 bg-[#181d2f] hover:bg-[#22293e] active:bg-[#121522] border border-[#2d354e] rounded-xl text-slate-200 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
+          className="w-full py-2 px-3 bg-[#171a13] hover:bg-[#20241b] active:bg-[#11130f] border border-[#34382e] rounded-lg text-slate-200 font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
         >
-          <RefreshCw className={clsx('w-3.5 h-3.5 text-indigo-400', isLoading && 'animate-spin')} />
+          <RefreshCw className={clsx('w-3.5 h-3.5 text-[#f6c945]', isLoading && 'animate-spin')} />
           <span>{isLoading ? 'Scanning...' : 'Rescan Project'}</span>
         </button>
       </div>
 
       {/* Project Overview Stats */}
-      <div className="p-4 border-b border-[#1c2233] space-y-2 bg-[#0e111b]/50">
+      <div className="p-4 border-b border-[#2a2d24] space-y-2 bg-[#11130f]/50">
         <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
           Scan Diagnostics
         </div>
         <div className="grid grid-cols-2 gap-2 text-[11px]">
-          <div className="p-2 rounded bg-[#141724] border border-[#222738]">
+          <div className="p-2 rounded bg-[#151811] border border-[#2a2d24]">
             <div className="text-slate-500 flex items-center gap-1">
               <FileText className="w-3 h-3" /> Files
             </div>
@@ -106,7 +130,7 @@ export function ProjectSidebar() {
               {scanStats?.scannedFilesCount || 0}
             </div>
           </div>
-          <div className="p-2 rounded bg-[#141724] border border-[#222738]">
+          <div className="p-2 rounded bg-[#151811] border border-[#2a2d24]">
             <div className="text-slate-500 flex items-center gap-1">
               <Clock className="w-3 h-3" /> Duration
             </div>
@@ -134,21 +158,21 @@ export function ProjectSidebar() {
       </div>
 
       {/* Detail Density Filter */}
-      <div className="p-4 border-b border-[#1c2233] space-y-2">
+      <div className="p-4 border-b border-[#2a2d24] space-y-2">
         <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
           <span className="flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#f6c945]" />
             Graph Density
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-1 bg-[#121522] p-1 rounded-xl border border-[#222738]">
+        <div className="grid grid-cols-3 gap-1 bg-[#11130f] p-1 rounded-lg border border-[#2a2d24]">
           {(['overview', 'standard', 'detailed'] as DensityLevel[]).map(d => (
             <button
               key={d}
               onClick={() => setDensity(d)}
               className={clsx(
                 'py-1 text-center rounded-lg text-[10px] capitalize font-medium transition-colors',
-                density === d ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                density === d ? 'bg-[#f6c945] text-[#070806] font-bold' : 'text-slate-400 hover:text-slate-200'
               )}
             >
               {d}
@@ -161,7 +185,7 @@ export function ProjectSidebar() {
       <div className="p-4 flex-1 overflow-y-auto space-y-2">
         <div className="flex items-center justify-between">
           <span className="font-semibold text-slate-300 flex items-center gap-1.5 text-[12px]">
-            <Filter className="w-3.5 h-3.5 text-indigo-400" />
+            <Filter className="w-3.5 h-3.5 text-[#f6c945]" />
             Node Type Filters
           </span>
           <button
@@ -184,20 +208,20 @@ export function ProjectSidebar() {
                 className={clsx(
                   'w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left',
                   isChecked
-                    ? 'bg-[#141724] border border-[#222738] text-slate-200 hover:bg-[#1a1e2f]'
-                    : 'text-slate-500 hover:text-slate-400 hover:bg-[#11131e]'
+                    ? 'bg-[#151811] border border-[#34382e] text-slate-200 hover:bg-[#1d2118]'
+                    : 'text-slate-500 hover:text-slate-400 hover:bg-[#11130f]'
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {isChecked ? (
-                    <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <CheckSquare className="w-3.5 h-3.5 text-[#f6c945] shrink-0" />
                   ) : (
                     <Square className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                   )}
                   <span className={clsx('shrink-0', item.color)}>{item.icon}</span>
                   <span className="truncate text-xs">{item.label}</span>
                 </div>
-                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#1c2233] text-slate-400">
+                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#25291f] text-slate-400">
                   {count}
                 </span>
               </button>

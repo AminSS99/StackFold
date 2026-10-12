@@ -1,0 +1,8 @@
+{
+  "chargeId": "ch_test_001",
+  "amountCents": 1999,
+  "currency": "USD",
+  "customer": { "id": "cus_test_123", "email": "receipts@example.com" },
+  "cardToken": "tok_test_synthetic_001",
+  "metadata": {}
+}

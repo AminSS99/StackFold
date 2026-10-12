@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-25T10:04:30.123Z",
+  "queues": [
+    {
+      "id": "billing",
+      "queue": "billing",
+      "consumerVersion": "v2",
+      "producerFile": "src/producer.js",
+      "consumerFile": "src/worker.js",
+      "payloadVersions": [
+        "v1",
+        "v2"
+      ],
+      "compatible": 2,
+      "review": 0,
+      "fail": 0
+    }
+  ],
+  "payloads": [
+    {
+      "id": "charge-v2-ok",
+      "label": "Current v2 charge (passing fixture)",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v2",
+      "consumerVersion": "v2",
+      "verdict": "compatible",
+      "failingField": null,
+      "failingStep": null,
+      "dataFingerprint": "3f30a34541dd",
+      "comparison": "payload 'charge-v2-ok' satisfies the worker contract for job 'charge' (consumer version 'v2'). payload #3f30a34541dd.",
+      "appliedMigrations": []
+    },
+    {
+      "id": "charge-v1-migratable",
+      "label": "Historical v1 charge with declared rename (passing fixture)",
+      "queue": "billing",
+      "jobName": "charge",
+      "payloadVersion": "v1",
+      "consumerVersion": "v2",
+      "verdict": "compatible",
+      "failingField": null,
+      "failingStep": null,
+      "dataFingerprint": "62a87de0deb7",
+      "comparison": "payload 'charge-v1-migratable' satisfies the worker contract for job 'charge' (consumer version 'v2'). payload #14d9ec1b0e7e. Applied migrations: v1->v2: rename 'amount' to 'amountCents'; v1->v2: migration declared.",
+      "appliedMigrations": [
+        "v1->v2: rename 'amount' to 'amountCents'",
+        "v1->v2: migration declared"
+      ]
+    }
+  ],
+  "reproductionTest": "import { test, expect } from 'vitest';\nimport fs from 'node:fs';\nimport path from 'node:path';\n\n// Reproduction for .stackfold/queue-compatibility.json.\n// Replays the checked-in historical payload fixtures against the recorded\n// verdicts. Payload values are read from fixture files at test time and are\n// never embedded here.\nconst root = process.env.STACKFOLD_QUEUE_ROOT || process.cwd();\nconst recorded = JSON.parse(\n  fs.readFileSync(\n    path.join(root, '.stackfold/queue-compatibility-results.json'),\n    'utf8'\n  )\n) as { payloads: Array<{ id: string; verdict: string; failingField: string | null; failingStep: string | null }> };\n\nfunction resultsById(id: string) {\n  const found = recorded.payloads.find(item => item.id === id);\n  if (!found) throw new Error(`No recorded payload '${id}'.`);\n  return found;\n}\n\ntest('queue compatibility: all historical payloads compatible', () => {\n  expect(recorded.payloads.every(item => item.verdict === 'compatible')).toBe(true);\n});\n"
+}

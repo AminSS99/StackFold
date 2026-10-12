@@ -1,0 +1,6 @@
+{
+  "chargeId": "ch_test_003",
+  "amount": 2599,
+  "currency": "USD",
+  "customer": { "id": "cus_test_125" }
+}

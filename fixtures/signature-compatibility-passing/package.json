@@ -1,0 +1,7 @@
+{
+  "name": "signature-compatibility-passing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stackfold Signature Compatibility passing fixture: signer and verifier share one canonicalization",
+  "type": "module"
+}

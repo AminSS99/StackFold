@@ -1,40 +1,29 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import {
-  Layers,
-  Workflow,
-  Database,
-  GitBranch,
-  Search,
-  AlertTriangle,
-  Download,
-  ArrowRightLeft,
-  ArrowUpDown,
-  Compass,
-  FolderGit2,
-  SlidersHorizontal,
-  Sparkles,
-} from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, Database, Download, FolderGit2, GitBranch, Github, Layers, PanelLeft, Search, Sparkles, Workflow } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
-import type { GraphViewType, DensityLevel } from '@stackfold/graph';
+import { IconButton } from '@/components/ui/IconButton';
+import { stackfoldLinks } from '@/config/links';
+import type { GraphViewType } from '@stackfold/graph';
 
 const VIEWS: Array<{ id: GraphViewType; label: string; icon: React.ReactNode }> = [
-  { id: 'architecture', label: 'Architecture', icon: <Layers className="w-4 h-4" /> },
-  { id: 'api_flow', label: 'API Flows', icon: <Workflow className="w-4 h-4" /> },
-  { id: 'database', label: 'Database', icon: <Database className="w-4 h-4" /> },
-  { id: 'dependencies', label: 'Dependencies', icon: <GitBranch className="w-4 h-4" /> },
+  { id: 'architecture', label: 'Architecture', icon: <Layers className="h-4 w-4" /> },
+  { id: 'api_flow', label: 'API flows', icon: <Workflow className="h-4 w-4" /> },
+  { id: 'database', label: 'Database', icon: <Database className="h-4 w-4" /> },
+  { id: 'dependencies', label: 'Dependencies', icon: <GitBranch className="h-4 w-4" /> },
 ];
 
-export function TopBar() {
+interface TopBarProps { filtersOpen: boolean; onToggleFilters: () => void; }
+
+export function TopBar({ filtersOpen, onToggleFilters }: TopBarProps) {
   const activeView = useStackfoldStore(s => s.activeView);
   const setActiveView = useStackfoldStore(s => s.setActiveView);
   const layoutDirection = useStackfoldStore(s => s.layoutDirection);
   const setLayoutDirection = useStackfoldStore(s => s.setLayoutDirection);
-  const density = useStackfoldStore(s => s.density);
-  const setDensity = useStackfoldStore(s => s.setDensity);
   const setCommandPaletteOpen = useStackfoldStore(s => s.setCommandPaletteOpen);
   const isDiagnosticsDrawerOpen = useStackfoldStore(s => s.isDiagnosticsDrawerOpen);
   const setDiagnosticsDrawerOpen = useStackfoldStore(s => s.setDiagnosticsDrawerOpen);
@@ -42,203 +31,39 @@ export function TopBar() {
   const setExportModalOpen = useStackfoldStore(s => s.setExportModalOpen);
   const setAiAssistantOpen = useStackfoldStore(s => s.setAiAssistantOpen);
   const rawGraph = useStackfoldStore(s => s.rawGraph);
-  const scanStats = useStackfoldStore(s => s.scanStats);
-
-  const diagnosticsCount = rawGraph?.diagnostics?.length || 0;
-
   const viewCounts = useMemo(() => {
     if (!rawGraph) return { architecture: 0, api_flow: 0, database: 0, dependencies: 0 };
-    return {
-      architecture: rawGraph.nodes.length,
-      api_flow: rawGraph.nodes.filter(n => n.type === 'api_route').length,
-      database: rawGraph.nodes.filter(n => n.type === 'database_model').length,
-      dependencies: rawGraph.nodes.filter(n => n.type === 'package' || n.type === 'source_module' || n.type === 'application').length,
-    };
+    return { architecture: rawGraph.nodes.length, api_flow: rawGraph.nodes.filter(n => n.type === 'api_route').length, database: rawGraph.nodes.filter(n => n.type === 'database_model').length, dependencies: rawGraph.nodes.filter(n => ['package', 'source_module', 'application'].includes(n.type)).length };
   }, [rawGraph]);
+  const diagnosticsCount = rawGraph?.diagnostics?.length || 0;
 
-  return (
-    <header className="h-14 bg-[#0d0f17] border-b border-[#1c2233] px-4 flex items-center justify-between gap-4 select-none z-30">
-      {/* Brand & Project Info */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setOnboardingModalOpen(true)}
-          className="flex items-center gap-2.5 text-left hover:opacity-90 transition-opacity"
-        >
-          {/* Approved Brand Symbol: Black background with 3 yellow bars */}
-          <div className="w-8 h-8 rounded-lg bg-black border border-amber-500/40 flex flex-col justify-center items-center gap-[3px] p-1.5 shadow-md shrink-0">
-            <div className="w-4 h-[3px] bg-amber-400 rounded-full ml-1" />
-            <div className="w-4 h-[3px] bg-amber-400 rounded-full" />
-            <div className="w-4 h-[3px] bg-amber-400 rounded-full mr-1" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-100 tracking-wider">STACKFOLD</span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-950/80 text-amber-300 border border-amber-800/60">
-                v0.1-desktop
-              </span>
-            </div>
-          </div>
-        </button>
-
-        {/* Open Project Trigger */}
-        <button
-          onClick={() => setOnboardingModalOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#141724] border border-[#222738] hover:border-indigo-500/50 text-slate-300 hover:text-white text-xs transition-colors"
-        >
-          <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
-          <span>{rawGraph ? 'Switch Project' : 'Open Project'}</span>
-        </button>
-
-        {/* Download Desktop App Link */}
-        <Link
-          href="/download"
-          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#141724] border border-[#222738] hover:border-amber-500/50 text-slate-300 hover:text-white text-xs transition-colors"
-          title="Download Desktop Application"
-        >
-          <Download className="w-3.5 h-3.5 text-amber-400" />
-          <span>Desktop App</span>
-        </Link>
-
-        {rawGraph && (
-          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-[#222738] text-xs text-slate-400">
-            <span className="text-slate-200 font-semibold">{rawGraph.metadata.projectName}</span>
-            <span className="text-slate-600">•</span>
-            <span className="font-mono text-[11px] text-slate-400">
-              {rawGraph.metadata.stats.nodeCount} nodes
-            </span>
-            {scanStats?.fromCache && (
-              <span className="px-1.5 py-0.2 rounded text-[10px] bg-sky-950 text-sky-300 border border-sky-800">
-                Cached
-              </span>
-            )}
-          </div>
-        )}
+  return <header className="z-30 shrink-0 border-b border-[#2a2d24] bg-[#0d0f0c]/95 backdrop-blur-xl">
+    <div className="flex h-14 items-center gap-2 px-3 sm:px-4">
+      <button onClick={() => setOnboardingModalOpen(true)} className="flex min-w-0 items-center gap-2 rounded-lg p-1 text-left transition-colors hover:bg-[#1b1e17]" aria-label="Open project picker">
+        <Image src="/logo.png" alt="Stackfold" width={28} height={28} className="h-7 w-7 rounded-md" priority />
+        <span className="hidden text-[13px] font-bold tracking-[0.16em] text-[#f6f7f2] sm:block">STACKFOLD</span>
+      </button>
+      <div className="hidden h-5 w-px bg-[#2a2d24] md:block" />
+      <button onClick={() => setOnboardingModalOpen(true)} className="hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-[#d9ddd0] transition-colors hover:bg-[#1b1e17] md:flex">
+        <FolderGit2 className="h-3.5 w-3.5 shrink-0 text-[#f6c945]" /><span className="max-w-40 truncate">{rawGraph?.metadata.projectName || 'Open repository'}</span>
+        {rawGraph && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#62d49b]" aria-label="Scanned locally" />}
+      </button>
+      {rawGraph && <span className="hidden text-[11px] text-[#74796d] xl:block">Scanned locally · no secret values read</span>}
+      <div className="ml-auto flex items-center gap-1.5">
+        {rawGraph && <>
+          <button onClick={() => setCommandPaletteOpen(true)} className="hidden h-10 items-center gap-2 rounded-lg border border-[#34382e] bg-[#141611] px-3 text-xs text-[#a5aa9b] transition-colors hover:border-[#676d58] hover:text-[#f6f7f2] lg:flex"><Search className="h-3.5 w-3.5" /><span>Search</span><kbd className="font-mono text-[10px] text-[#74796d]">⌘K</kbd></button>
+          <IconButton label={filtersOpen ? 'Hide graph filters' : 'Show graph filters'} onClick={onToggleFilters} className={clsx('hidden lg:grid', filtersOpen && 'border-[#f6c945]/50 bg-[#f6c945]/10 text-[#f6c945]')}><PanelLeft className="h-4 w-4" /></IconButton>
+          <IconButton label="Switch graph direction" onClick={() => setLayoutDirection(layoutDirection === 'LR' ? 'TB' : 'LR')} className="hidden xl:grid"><ArrowRightLeft className="h-4 w-4" /></IconButton>
+          <IconButton label="Export architecture" onClick={() => setExportModalOpen(true)} className="hidden xl:grid"><Download className="h-4 w-4" /></IconButton>
+          <IconButton label="Ask Stackfold" onClick={() => setAiAssistantOpen(true)} className="hidden 2xl:grid border-[#f6c945]/35 bg-[#f6c945]/10 text-[#f6c945]"><Sparkles className="h-4 w-4" /></IconButton>
+          <IconButton label={`Diagnostics${diagnosticsCount ? ` (${diagnosticsCount})` : ''}`} onClick={() => setDiagnosticsDrawerOpen(!isDiagnosticsDrawerOpen)} className={clsx(diagnosticsCount > 0 && 'border-[#f6c945]/40 bg-[#f6c945]/10 text-[#f6c945]')}><AlertTriangle className="h-4 w-4" /></IconButton>
+        </>}
+        {!rawGraph && <Link href="/download" className="hidden rounded-lg bg-[#f6c945] px-3 py-2 text-xs font-semibold text-[#070806] transition-colors hover:bg-[#ffda67] sm:block">Download</Link>}
+        <a href={stackfoldLinks.repository} target="_blank" rel="noreferrer" className="grid h-10 w-10 place-items-center rounded-lg border border-[#34382e] text-[#a5aa9b] transition-colors hover:border-[#676d58] hover:text-[#f6f7f2]" aria-label="View Stackfold on GitHub" title="View Stackfold on GitHub"><Github className="h-4 w-4" /></a>
       </div>
-
-      {/* View Switcher Tabs (Only visible when project is loaded) */}
-      {rawGraph && (
-        <div className="flex items-center bg-[#131622] p-1 rounded-xl border border-[#222738]">
-          {VIEWS.map(v => {
-            const isActive = activeView === v.id;
-            const count = viewCounts[v.id] ?? 0;
-            return (
-              <button
-                key={v.id}
-                onClick={() => setActiveView(v.id)}
-                className={clsx(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : count > 0
-                    ? 'text-slate-300 hover:text-white hover:bg-[#1c2233]'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-[#161a29]'
-                )}
-              >
-                {v.icon}
-                <span>{v.label}</span>
-                <span
-                  className={clsx(
-                    'px-1.5 py-0.2 rounded-full text-[10px] font-mono',
-                    isActive
-                      ? 'bg-white/20 text-white'
-                      : count > 0
-                      ? 'bg-[#20273a] text-slate-300'
-                      : 'text-slate-600'
-                  )}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Utility Actions */}
-      <div className="flex items-center gap-2">
-        {rawGraph && (
-          <>
-            {/* Ask Stackfold AI Intelligence Button */}
-            <button
-              onClick={() => setAiAssistantOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 hover:from-indigo-900/90 hover:to-purple-900/90 border border-indigo-500/40 text-xs font-semibold text-indigo-200 hover:text-white transition-all shadow-md group"
-              title="Ask Stackfold — Architecture Intelligence"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="hidden md:inline">Ask Stackfold</span>
-            </button>
-
-            {/* Density Selector */}
-            <div className="hidden sm:flex items-center bg-[#131622] p-0.5 rounded-lg border border-[#222738] text-xs">
-              {(['overview', 'standard', 'detailed'] as DensityLevel[]).map(d => (
-                <button
-                  key={d}
-                  onClick={() => setDensity(d)}
-                  className={clsx(
-                    'px-2 py-1 rounded text-[11px] capitalize transition-colors',
-                    density === d ? 'bg-[#222738] text-slate-100 font-semibold' : 'text-slate-400 hover:text-slate-200'
-                  )}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-
-            {/* Search / Command palette trigger */}
-            <button
-              onClick={() => setCommandPaletteOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#141724] border border-[#222738] hover:border-[#38415f] text-slate-400 hover:text-slate-200 text-xs transition-colors"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Search...</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-[#1e2336] text-slate-400 font-mono text-[10px] border border-[#2d354e]">
-                ⌘K
-              </kbd>
-            </button>
-
-            {/* Layout direction toggle */}
-            <button
-              onClick={() => setLayoutDirection(layoutDirection === 'LR' ? 'TB' : 'LR')}
-              title={`Switch layout direction to ${layoutDirection === 'LR' ? 'Vertical (TB)' : 'Horizontal (LR)'}`}
-              className="p-2 rounded-lg bg-[#141724] border border-[#222738] hover:border-[#38415f] text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              {layoutDirection === 'LR' ? (
-                <ArrowRightLeft className="w-4 h-4" />
-              ) : (
-                <ArrowUpDown className="w-4 h-4" />
-              )}
-            </button>
-
-            {/* Export Architecture */}
-            <button
-              onClick={() => setExportModalOpen(true)}
-              title="Export Architecture (Mermaid, Markdown, JSON)"
-              className="p-2 rounded-lg bg-[#141724] border border-[#222738] hover:border-amber-500/50 text-slate-400 hover:text-amber-300 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            {/* Diagnostics button */}
-            <button
-              onClick={() => setDiagnosticsDrawerOpen(!isDiagnosticsDrawerOpen)}
-              className={clsx(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors',
-                diagnosticsCount > 0
-                  ? 'bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50'
-                  : 'bg-[#141724] border-[#222738] text-slate-400 hover:text-slate-200'
-              )}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Diagnostics</span>
-              {diagnosticsCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold flex items-center justify-center">
-                  {diagnosticsCount}
-                </span>
-              )}
-            </button>
-          </>
-        )}
-      </div>
-    </header>
-  );
+    </div>
+    {rawGraph && <nav aria-label="Architecture views" className="flex h-11 items-end gap-1 overflow-x-auto px-3 [scrollbar-width:none] sm:px-4">
+      {VIEWS.map(view => { const active = activeView === view.id; return <button key={view.id} onClick={() => setActiveView(view.id)} className={clsx('flex h-10 items-center gap-2 border-b-2 px-3 text-xs font-medium whitespace-nowrap transition-colors', active ? 'border-[#f6c945] text-[#f6f7f2]' : 'border-transparent text-[#74796d] hover:text-[#d9ddd0]')}><span className={active ? 'text-[#f6c945]' : ''}>{view.icon}</span><span>{view.label}</span><span className="font-mono text-[10px] text-[#74796d]">{viewCounts[view.id]}</span></button>; })}
+    </nav>}
+  </header>;
 }

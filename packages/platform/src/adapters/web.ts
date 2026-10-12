@@ -1,9 +1,15 @@
 import type {
+  CacheIsolationPlatformPayload,
+  CacheIsolationPlatformRequest,
   PlatformAdapter,
   PreferredEditor,
+  QueueCompatibilityPlatformPayload,
+  QueueCompatibilityPlatformRequest,
   RecentProjectEntry,
   ScanPlatformParams,
   ScanPlatformResult,
+  SignatureCompatibilityPlatformPayload,
+  SignatureCompatibilityPlatformRequest,
 } from '../types';
 import type { PathValidationResult, ScanProgress, StackfoldScanArtifact } from '@stackfold/scanner';
 
@@ -213,6 +219,96 @@ export class WebPlatformAdapter implements PlatformAdapter {
   async setWindowTitle(title: string): Promise<void> {
     if (typeof document !== 'undefined') {
       document.title = title;
+    }
+  }
+
+  async loadCacheIsolationRecorded(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    try {
+      const params = new URLSearchParams();
+      if (request.rootPath) params.set('rootPath', request.rootPath);
+      if (request.fixture) params.set('fixture', request.fixture);
+      const query = params.toString();
+      const res = await fetch(`/api/security/cache-isolation${query ? `?${query}` : ''}`, { cache: 'no-store' });
+      const data = await res.json();
+      return data as CacheIsolationPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load recorded Cache Isolation result';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
+    }
+  }
+
+  async runCacheIsolationProbe(request: CacheIsolationPlatformRequest): Promise<CacheIsolationPlatformPayload> {
+    try {
+      const res = await fetch('/api/security/cache-isolation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootPath: request.rootPath, fixture: request.fixture }),
+      });
+      const data = await res.json();
+      return data as CacheIsolationPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cache Isolation probe failed';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
+    }
+  }
+
+  async loadSignatureCompatibilityRecorded(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    try {
+      const params = new URLSearchParams();
+      if (request.rootPath) params.set('rootPath', request.rootPath);
+      if (request.fixture) params.set('fixture', request.fixture);
+      const query = params.toString();
+      const res = await fetch(`/api/security/signature-compatibility${query ? `?${query}` : ''}`, { cache: 'no-store' });
+      const data = await res.json();
+      return data as SignatureCompatibilityPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load recorded Signature Compatibility result';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
+    }
+  }
+
+  async runSignatureCompatibilityProbe(request: SignatureCompatibilityPlatformRequest): Promise<SignatureCompatibilityPlatformPayload> {
+    try {
+      const res = await fetch('/api/security/signature-compatibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootPath: request.rootPath, fixture: request.fixture }),
+      });
+      const data = await res.json();
+      return data as SignatureCompatibilityPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Signature Compatibility probe failed';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
+    }
+  }
+
+  async loadQueueCompatibilityRecorded(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    try {
+      const params = new URLSearchParams();
+      if (request.rootPath) params.set('rootPath', request.rootPath);
+      if (request.fixture) params.set('fixture', request.fixture);
+      const query = params.toString();
+      const res = await fetch(`/api/security/queue-compatibility${query ? `?${query}` : ''}`, { cache: 'no-store' });
+      const data = await res.json();
+      return data as QueueCompatibilityPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load recorded Queue Compatibility result';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
+    }
+  }
+
+  async runQueueCompatibilityCheck(request: QueueCompatibilityPlatformRequest): Promise<QueueCompatibilityPlatformPayload> {
+    try {
+      const res = await fetch('/api/security/queue-compatibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootPath: request.rootPath, fixture: request.fixture }),
+      });
+      const data = await res.json();
+      return data as QueueCompatibilityPlatformPayload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Queue Compatibility check failed';
+      return { success: false, error: msg, code: 'NETWORK_ERROR' };
     }
   }
 }

@@ -20,8 +20,8 @@ interface BaseNodeContainerProps {
 export function BaseNodeContainer({
   id,
   selected,
-  borderColor = 'border-[#2a3147]',
-  glowColor = 'rgba(99, 102, 241, 0.25)',
+  borderColor = 'border-[#34382e]',
+  glowColor = 'rgba(246, 201, 69, 0.22)',
   icon,
   title,
   subtitle,
@@ -34,29 +34,30 @@ export function BaseNodeContainer({
   return (
     <div
       className={clsx(
-        'relative rounded-xl bg-[#111420] border transition-all duration-200 shadow-lg select-none min-w-[200px] text-xs',
+        'relative w-full min-w-0 rounded-[10px] border bg-[#11130f] text-xs shadow-lg transition-[border-color,box-shadow,transform] duration-200 select-none hover:-translate-y-px',
         isCurrentlySelected
-          ? 'border-indigo-500 ring-2 ring-indigo-500/50 shadow-indigo-500/20'
-          : `${borderColor} hover:border-[#434d70]`
+          ? 'border-[#f6c945] ring-2 ring-[#f6c945]/30 shadow-[#f6c945]/10'
+          : `${borderColor} hover:border-[#606554]`
       )}
       style={{
         boxShadow: isCurrentlySelected ? `0 0 20px ${glowColor}` : undefined,
       }}
     >
+      {isCurrentlySelected && <span className="absolute -left-1 top-3 h-8 w-0.5 rounded-full bg-[#f6c945]" aria-hidden="true" />}
       {/* React Flow Handles */}
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-[#111420] !-left-[5px]"
+        className="!w-2.5 !h-2.5 !bg-[#f6c945] !border-2 !border-[#11130f] !-left-[5px]"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-[#111420] !-right-[5px]"
+        className="!w-2.5 !h-2.5 !bg-[#f6c945] !border-2 !border-[#11130f] !-right-[5px]"
       />
 
       {/* Header */}
-      <div className="p-3 border-b border-[#1b2032] flex items-center justify-between gap-2">
+      <div className="p-3 border-b border-[#292c24] flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {icon && <div className="text-slate-400 shrink-0">{icon}</div>}
           <div className="min-w-0">

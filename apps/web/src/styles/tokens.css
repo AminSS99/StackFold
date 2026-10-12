@@ -1,0 +1,22 @@
+:root {
+  --sf-bg: #070806;
+  --sf-surface-1: #0d0f0c;
+  --sf-surface-2: #141611;
+  --sf-surface-3: #1b1e17;
+  --sf-border: #2a2d24;
+  --sf-border-strong: #3b3f31;
+  --sf-text: #f6f7f2;
+  --sf-text-muted: #a5aa9b;
+  --sf-text-subtle: #74796d;
+  --sf-yellow: #f6c945;
+  --sf-yellow-hover: #ffda67;
+  --sf-yellow-pressed: #d9aa22;
+  --sf-yellow-soft: rgba(246, 201, 69, 0.12);
+  --sf-danger: #ff6b6b;
+  --sf-success: #62d49b;
+  --sf-warning: #f6c945;
+  --sf-focus: #ffe48f;
+
+  --background: var(--sf-bg);
+  --foreground: var(--sf-text);
+}
