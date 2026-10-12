@@ -78,7 +78,7 @@ Stackfold analyzes real codebases using deterministic AST and schema parsing. Su
 
 Stackfold is built around a strict local-first security boundary:
 
-1. **Local Analysis**: Code scanning executes entirely on your machine. Source code, ASTs, and architecture graphs are never transmitted over the internet.
+1. **Local Analysis**: Local-mode scanning keeps analysis on your machine. Optional cloud saving/sharing in configured web deployments sends the selected graph, including its evidence, to the configured backend; review it before sharing private repositories. Explicit live probes also contact their configured test targets.
 2. **Secret Handling**: Active environment files (`.env`, `.env.local`, `.env.production`) are excluded by default. Scans extract environment-reference names. Configured live probes use synthetic test credentials; recorded probe results redact credential and payload values.
 3. **Path Traversal & System Root Defense**: The desktop application canonicalizes paths and rejects system root directories (`/`, `/System`, `/private`, `/etc`, `/var`, `/usr`, `C:\Windows`) with `FORBIDDEN_SYSTEM_ROOT`.
 4. **Sandboxed Webview**: The desktop shell enforces an active Content Security Policy (CSP) with typed Tauri IPC invoke barriers.
