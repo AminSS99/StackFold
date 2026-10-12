@@ -46,6 +46,12 @@ jobs:
       - name: Install dependencies with frozen lockfile
         run: pnpm install --frozen-lockfile
 
+      - name: Build scanner resources required by Cargo checks
+        run: pnpm --filter=@stackfold/scanner... build
+
+      - name: Verify CLI help and compatibility gate exit codes
+        run: node scripts/smoke-cli.mjs
+
       - name: Type check (TypeScript + Cargo check)
         run: pnpm typecheck
 

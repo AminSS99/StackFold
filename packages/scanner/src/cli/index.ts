@@ -18,7 +18,7 @@ async function main() {
     const rootPath = args[1];
     if (!rootPath || args.includes('--help')) {
       process.stdout.write('Usage: stackfold cache-isolation <repository> [--out result.json] [--headed]\n');
-      process.exit(rootPath ? 0 : 1);
+      process.exit(args.includes('--help') ? 0 : 1);
     }
     const canonicalRoot = path.resolve(rootPath);
     const { config } = loadCacheIsolationConfig(canonicalRoot);
@@ -39,7 +39,7 @@ async function main() {
     const rootPath = args[1];
     if (!rootPath || args.includes('--help')) {
       process.stdout.write('Usage: stackfold signature-compatibility <repository> [--out result.json]\n');
-      process.exit(rootPath ? 0 : 1);
+      process.exit(args.includes('--help') ? 0 : 1);
     }
     const canonicalRoot = path.resolve(rootPath);
     const { config } = loadSignatureCompatibilityConfig(canonicalRoot);
@@ -60,7 +60,7 @@ async function main() {
     const rootPath = args[1];
     if (!rootPath || args.includes('--help')) {
       process.stdout.write('Usage: stackfold queue-compatibility <repository> [--out result.json]\n');
-      process.exit(rootPath ? 0 : 1);
+      process.exit(args.includes('--help') ? 0 : 1);
     }
     const canonicalRoot = path.resolve(rootPath);
     const { config } = loadQueueCompatibilityConfig(canonicalRoot);
@@ -83,7 +83,7 @@ async function main() {
 
   if (!rootPath || args.includes('--help')) {
     process.stdout.write('Usage: stackfold <repository> [--format terminal|json|github-actions|circleci] [--fail-on-findings]\n       stackfold cache-isolation <repository> [--out result.json] [--headed]\n       stackfold signature-compatibility <repository> [--out result.json]\n       stackfold queue-compatibility <repository> [--out result.json]\n');
-    process.exit(rootPath ? 0 : 1);
+    process.exit(args.includes('--help') ? 0 : 1);
   }
   if (!supported.includes(format)) {
     throw new Error(`Unsupported format '${format}'.`);

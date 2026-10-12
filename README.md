@@ -4,7 +4,7 @@
 
 # Stackfold
 
-**Visual project intelligence and architectural control center for modern codebases.**
+**Map your JavaScript and TypeScript codebase, trace dependencies, and see what a code change could affect.**
 
 [![CI](https://github.com/AminSS99/StackFold/actions/workflows/ci.yml/badge.svg)](https://github.com/AminSS99/StackFold/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0--alpha-amber)](https://github.com/AminSS99/StackFold/releases)
@@ -18,7 +18,7 @@ Stackfold scans software repositories and turns them into interactive, high-fide
 
 > **"How does this project actually work, and what will be affected if I change something?"**
 
-Stackfold is **not** a code generation tool or a conversational coding assistant. It is a local-first architectural context engine and change-impact intelligence layer designed for software engineers, tech leads, and security reviewers.
+Use it to understand an unfamiliar repository, follow API and database relationships, and inspect source-linked change impact. The macOS app is an **early alpha**; its CLI also produces architecture-risk findings and configured compatibility checks.
 
 ---
 
@@ -52,8 +52,8 @@ Visual relational mapping parsed directly from your schema definitions:
 - **Deterministic Evidence**: Every discovered entity is backed by traceable evidence (source file path, exact line/column range, detector rule, and code snippet).
 - **Security Lab**: Selected-project testing workflows with recorded results and live checks — Cache Isolation two-session probes, Signature Compatibility signer/verifier mismatch analysis with byte-exact evidence and generated reproductions, and Queue Compatibility historical BullMQ payload replays with exact failing fields.
 - **Architecture Risk Modules**: PreviewFence, Drift Impact, TxEscape, ScopePatch, IDTrace, Cache Isolation, Signature Compatibility, and Queue Compatibility findings flow through terminal, JSON, GitHub Actions, and CircleCI reporters.
-- **Standalone Native Desktop**: Native macOS desktop application (Tauri 2.x) with OS folder pickers, background cancellation, and zero orphaned processes.
-- **Local-First & Zero Secrets**: Runs 100% locally. Private environment values and credentials are never read, stored, logged, or exposed. Cloud sync (Clerk) is strictly opt-in; without it the app runs in local mode with cloud controls disabled.
+- **macOS Desktop**: Tauri 2.x application with OS folder pickers and scanner cancellation. Requires a separately installed Node.js runtime.
+- **Local-First Analysis**: Repository analysis runs on your machine. Ordinary scans exclude active environment files. Explicit live probes read configured synthetic test credentials from the environment; use dedicated test accounts and targets. Cloud authentication is optional; without keys the app runs in local mode with cloud controls disabled.
 
 ---
 
@@ -79,7 +79,7 @@ Stackfold analyzes real codebases using deterministic AST and schema parsing. Su
 Stackfold is built around a strict local-first security boundary:
 
 1. **Local Analysis**: Code scanning executes entirely on your machine. Source code, ASTs, and architecture graphs are never transmitted over the internet.
-2. **Zero Secrets Ingestion**: Active environment files (`.env`, `.env.local`, `.env.production`) are excluded by default. Scanner detectors extract variable names only—never secret values.
+2. **Secret Handling**: Active environment files (`.env`, `.env.local`, `.env.production`) are excluded by default. Scans extract environment-reference names. Configured live probes use synthetic test credentials; recorded probe results redact credential and payload values.
 3. **Path Traversal & System Root Defense**: The desktop application canonicalizes paths and rejects system root directories (`/`, `/System`, `/private`, `/etc`, `/var`, `/usr`, `C:\Windows`) with `FORBIDDEN_SYSTEM_ROOT`.
 4. **Sandboxed Webview**: The desktop shell enforces an active Content Security Policy (CSP) with typed Tauri IPC invoke barriers.
 5. **Clean Process Lifecycle**: Scanner sidecars are managed with atomic PID tracking to terminate child processes cleanly on cancellation or window exit.
@@ -92,7 +92,7 @@ For details, read our [SECURITY.md](SECURITY.md).
 
 ### Desktop Application (macOS)
 
-1. Download the latest `Stackfold_0.1.0_aarch64.dmg` from the release artifacts.
+1. Install Node.js 20 or later, then download `Stackfold_0.1.0_aarch64.dmg` from the [v0.1.0 release](https://github.com/AminSS99/StackFold/releases/tag/v0.1.0). This is an Apple Silicon early-alpha build; the newer Security Lab modules described here are source-checkout features until a new desktop release is published.
 2. Open the disk image and drag `Stackfold.app` into your `/Applications` folder.
 3. **Gatekeeper Notice (Early Alpha):** Because this early alpha release is not yet notarized by Apple, macOS Gatekeeper may present a security warning on first open. To open:
    ```bash
@@ -118,6 +118,10 @@ cd StackFold
 
 # 2. Install dependencies with frozen lockfile
 pnpm install --frozen-lockfile
+
+# Build the scanner and its dependencies before native dev/checks.
+# Cargo validates this bundled resource even during typechecking.
+pnpm --filter=@stackfold/scanner... build
 
 # 3. Run the Next.js web application (http://localhost:3000)
 pnpm dev:web
@@ -171,6 +175,8 @@ packages/scanner/dist/stackfold.cjs queue-compatibility /path/to/repository --ou
 
 **Status:** Early Alpha (`v0.1.0`).
 
+See [GitHub profile copy and readiness evidence](docs/GITHUB_READINESS.md) for the current preparation snapshot and the distinction between source features and the published desktop alpha.
+
 Stackfold is functional and self-hosting (it scans its own repository cleanly), but has known limitations:
 
 - **Unsigned Desktop Builds**: macOS builds currently require removing the quarantine attribute (`xattr -cr`) due to lack of Apple Developer ID signing.
@@ -195,4 +201,4 @@ Stackfold is functional and self-hosting (it scans its own repository cleanly), 
 
 ## License
 
-Stackfold is preparing for public open-source release under **Apache-2.0** or **MIT**. See [LICENSE](LICENSE) for details.
+Stackfold is open source under **Apache-2.0**. See [LICENSE](LICENSE).

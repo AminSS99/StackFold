@@ -4,8 +4,8 @@ import './globals.css';
 import { AuthProvider } from '@/components/cloud/AuthProvider';
 
 export const metadata: Metadata = {
-  title: 'Stackfold — Visual Project Intelligence & Architecture Control Center',
-  description: 'Interactive visual system map for modern TypeScript, Next.js, and Prisma codebases.',
+  title: 'Stackfold — Map your codebase and understand change impact',
+  description: 'Map your JavaScript and TypeScript codebase, trace dependencies, and see what a code change could affect.',
 };
 
 export default function RootLayout({
