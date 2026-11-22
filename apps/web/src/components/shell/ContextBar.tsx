@@ -141,53 +141,31 @@ export function ContextBar({
               Ask Stackfold
             </Button>
 
-            {/* Save to Cloud (cloud-only; disabled with explanation in local mode) */}
-            {onOpenSaveModal &&
-              (isCloudEnabled() ? (
-                <Tooltip content="Save Architecture Snapshot to Neon" side="bottom">
-                  <button
-                    onClick={onOpenSaveModal}
-                    aria-label="Save to Cloud"
-                    className="p-2 rounded-lg bg-[#141611] hover:bg-[#1b1e17] border border-[#2a2d24] text-[#a5aa9b] hover:text-[#f6c945] transition-colors"
-                  >
-                    <CloudUpload className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-              ) : (
-                <Tooltip content="Cloud sync disabled — local mode (Clerk not configured)" side="bottom">
-                  <button
-                    aria-label="Save to Cloud (unavailable in local mode)"
-                    aria-disabled="true"
-                    className="p-2 rounded-lg bg-[#141611] border border-[#2a2d24] text-[#4f5447] cursor-not-allowed opacity-60"
-                  >
-                    <CloudUpload className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-              ))}
+            {/* Save to Cloud (shown only when cloud sync is configured) */}
+            {onOpenSaveModal && isCloudEnabled() && (
+              <Tooltip content="Save Architecture Snapshot to Neon" side="bottom">
+                <button
+                  onClick={onOpenSaveModal}
+                  aria-label="Save to Cloud"
+                  className="p-2 rounded-lg bg-[#141611] hover:bg-[#1b1e17] border border-[#2a2d24] text-[#a5aa9b] hover:text-[#f6c945] transition-colors"
+                >
+                  <CloudUpload className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+            )}
 
-            {/* Share Map (cloud-only; disabled with explanation in local mode) */}
-            {onOpenShareModal &&
-              (isCloudEnabled() ? (
-                <Tooltip content="Share Architecture Map" side="bottom">
-                  <button
-                    onClick={onOpenShareModal}
-                    aria-label="Share Map"
-                    className="p-2 rounded-lg bg-[#141611] hover:bg-[#1b1e17] border border-[#2a2d24] text-[#a5aa9b] hover:text-[#f6c945] transition-colors"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-              ) : (
-                <Tooltip content="Sharing disabled — local mode (Clerk not configured)" side="bottom">
-                  <button
-                    aria-label="Share Map (unavailable in local mode)"
-                    aria-disabled="true"
-                    className="p-2 rounded-lg bg-[#141611] border border-[#2a2d24] text-[#4f5447] cursor-not-allowed opacity-60"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-              ))}
+            {/* Share Map (shown only when cloud sync is configured) */}
+            {onOpenShareModal && isCloudEnabled() && (
+              <Tooltip content="Share Architecture Map" side="bottom">
+                <button
+                  onClick={onOpenShareModal}
+                  aria-label="Share Map"
+                  className="p-2 rounded-lg bg-[#141611] hover:bg-[#1b1e17] border border-[#2a2d24] text-[#a5aa9b] hover:text-[#f6c945] transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+            )}
 
             {/* Rescan Button */}
             <Tooltip content="Rescan Project" side="bottom">

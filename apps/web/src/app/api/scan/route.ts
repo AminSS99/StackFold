@@ -2,18 +2,27 @@ import { NextResponse } from 'next/server';
 import path from 'node:path';
 import { z } from 'zod';
 import { scanRepository, validateRepositoryPath } from '@stackfold/scanner';
+import {
+  checkRateLimit,
+  PUBLIC_FIXTURES,
+  resolveSafeTarget,
+  sanitizeServerPaths,
+} from '@/lib/server-security';
 
 export const dynamic = 'force-static';
 
 const scanRequestSchema = z.object({
-  rootPath: z.string().optional(),
-  fixture: z.string().optional(),
-  projectName: z.string().optional(),
+  rootPath: z.string().max(1024).optional(),
+  fixture: z.string().max(120).optional(),
+  projectName: z.string().max(120).optional(),
   useCache: z.boolean().optional(),
-  maxFiles: z.number().int().positive().max(50000).optional(),
+  maxFiles: z.number().int().positive().max(15000).optional(),
 });
 
 export async function POST(req: Request) {
+  const rateLimitResponse = checkRateLimit(req, 'api-scan', 30, 60_000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     let body: unknown;
     try {
@@ -34,52 +43,14 @@ export async function POST(req: Request) {
         {
           error: 'Invalid scan request parameters',
           code: 'INVALID_REQUEST_BODY',
-          details: parseResult.error.flatten(),
         },
         { status: 400 }
       );
     }
 
     const { fixture, rootPath: rawRootPath, projectName, useCache, maxFiles } = parseResult.data;
-    let targetPath: string | undefined;
 
-    if (fixture) {
-      if (fixture === 'sample-ecommerce-app') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/sample-ecommerce-app');
-      } else if (fixture === 'sample-monorepo-platform') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/sample-monorepo-platform');
-      } else if (fixture === 'preview-fence-vercel-supabase') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/preview-fence-vercel-supabase');
-      } else if (fixture === 'tx-escape-prisma') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/tx-escape-prisma');
-      } else if (fixture === 'scopepatch-idtrace') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/scopepatch-idtrace');
-      } else if (fixture === 'cache-isolation-vulnerable') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/cache-isolation-vulnerable');
-      } else if (fixture === 'signature-compatibility-vulnerable') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-vulnerable');
-      } else if (fixture === 'signature-compatibility-passing') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/signature-compatibility-passing');
-      } else if (fixture === 'queue-compatibility-failing') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/queue-compatibility-failing');
-      } else if (fixture === 'queue-compatibility-passing') {
-        targetPath = path.resolve(process.cwd(), '../../fixtures/queue-compatibility-passing');
-      } else if (fixture === 'stackfold-self') {
-        targetPath = path.resolve(process.cwd(), '../../');
-      } else {
-        return NextResponse.json(
-          {
-            error: `Unknown bundled fixture: '${fixture}'`,
-            code: 'UNKNOWN_FIXTURE',
-          },
-          { status: 400 }
-        );
-      }
-    } else if (rawRootPath) {
-      targetPath = rawRootPath;
-    }
-
-    if (!targetPath) {
+    if (!fixture && !rawRootPath) {
       return NextResponse.json(
         {
           error: 'Either rootPath or fixture identifier must be provided',
@@ -89,8 +60,27 @@ export async function POST(req: Request) {
       );
     }
 
+    let resolvedTarget: ReturnType<typeof resolveSafeTarget>;
+    try {
+      resolvedTarget = resolveSafeTarget({
+        req,
+        fixture,
+        rootPath: rawRootPath,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Invalid repository target';
+      const isForbidden = msg.includes('disabled on the public hosted') || msg.includes('disabled on public');
+      return NextResponse.json(
+        {
+          error: msg,
+          code: isForbidden ? 'HOSTED_DEMO_RESTRICTED' : 'INVALID_PATH',
+        },
+        { status: isForbidden ? 403 : 400 }
+      );
+    }
+
     // Validate path & security bounds
-    const validation = validateRepositoryPath(targetPath);
+    const validation = validateRepositoryPath(resolvedTarget.physicalRoot);
     if (!validation.isValid || !validation.canonicalPath) {
       return NextResponse.json(
         {
@@ -101,27 +91,49 @@ export async function POST(req: Request) {
       );
     }
 
+    const fixtureMeta = resolvedTarget.fixtureId ? PUBLIC_FIXTURES[resolvedTarget.fixtureId] : undefined;
+    const effectiveProjectName =
+      projectName ||
+      fixtureMeta?.name ||
+      validation.projectName ||
+      path.basename(validation.canonicalPath);
+
     const result = await scanRepository({
       rootPath: validation.canonicalPath,
-      projectName: projectName || validation.projectName || path.basename(validation.canonicalPath),
+      projectName: effectiveProjectName,
       useCache: useCache ?? false,
       maxFiles: maxFiles || 15000,
     });
 
-    return NextResponse.json({
-      success: true,
-      graph: result.graph,
-      durationMs: result.durationMs,
-      scannedFilesCount: result.scannedFilesCount,
-      diagnostics: result.diagnostics,
-      fromCache: result.fromCache ?? false,
-      canonicalPath: validation.canonicalPath,
-    });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal scanner error';
+    const safePayload = resolvedTarget.isFixture
+      ? sanitizeServerPaths(
+          {
+            success: true,
+            graph: result.graph,
+            durationMs: result.durationMs,
+            scannedFilesCount: result.scannedFilesCount,
+            diagnostics: result.diagnostics,
+            fromCache: result.fromCache ?? false,
+            canonicalPath: resolvedTarget.displayPath,
+          },
+          validation.canonicalPath,
+          resolvedTarget.displayPath
+        )
+      : {
+          success: true,
+          graph: result.graph,
+          durationMs: result.durationMs,
+          scannedFilesCount: result.scannedFilesCount,
+          diagnostics: result.diagnostics,
+          fromCache: result.fromCache ?? false,
+          canonicalPath: validation.canonicalPath,
+        };
+
+    return NextResponse.json(safePayload);
+  } catch {
     return NextResponse.json(
       {
-        error: message,
+        error: 'Internal scanner execution error',
         code: 'SCANNER_EXECUTION_ERROR',
       },
       { status: 500 }

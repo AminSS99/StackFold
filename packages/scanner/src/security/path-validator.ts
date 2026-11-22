@@ -18,12 +18,62 @@ const FORBIDDEN_ROOTS = new Set([
   '/root',
   '/System',
   '/System/Library',
+  '/etc',
+  '/private',
+  '/private/etc',
+  '/usr',
+  '/bin',
+  '/sbin',
+  '/dev',
+  '/proc',
+  '/sys',
+  '/var',
+  '/var/root',
+  '/var/log',
+  '/var/run',
+  '/var/db',
   '/Windows',
   '/Windows/System32',
   'C:\\',
   'C:\\Windows',
   'C:\\Windows\\System32',
+  'C:\\Program Files',
+  'C:\\Program Files (x86)',
 ]);
+
+const FORBIDDEN_SYSTEM_PREFIXES = [
+  '/System/',
+  '/etc/',
+  '/private/etc/',
+  '/usr/',
+  '/bin/',
+  '/sbin/',
+  '/dev/',
+  '/proc/',
+  '/sys/',
+  '/var/root/',
+  '/var/log/',
+  '/var/run/',
+  '/var/db/',
+];
+
+const FORBIDDEN_CREDENTIAL_SEGMENTS = new Set([
+  '.ssh',
+  '.aws',
+  '.gnupg',
+  '.kube',
+  '.docker',
+  '.npmrc',
+]);
+
+function isForbiddenSystemPath(p: string): boolean {
+  if (FORBIDDEN_ROOTS.has(p) || p === path.parse(p).root) return true;
+  for (const prefix of FORBIDDEN_SYSTEM_PREFIXES) {
+    if (p.startsWith(prefix)) return true;
+  }
+  const segments = p.split(/[\\/]+/);
+  return segments.some(seg => FORBIDDEN_CREDENTIAL_SEGMENTS.has(seg));
+}
 
 export function validateRepositoryPath(targetPath: string): PathValidationResult {
   if (!targetPath || typeof targetPath !== 'string' || !targetPath.trim()) {
@@ -38,10 +88,22 @@ export function validateRepositoryPath(targetPath: string): PathValidationResult
     };
   }
 
+  if (targetPath.includes('\0')) {
+    return {
+      isValid: false,
+      hasPackageJson: false,
+      hasTsConfig: false,
+      hasPrisma: false,
+      isMonorepo: false,
+      errorCode: 'INVALID_PATH',
+      errorMessage: 'Repository path contains invalid characters.',
+    };
+  }
+
   const resolved = path.resolve(targetPath.trim());
 
-  // Check forbidden system roots
-  if (FORBIDDEN_ROOTS.has(resolved) || resolved === path.parse(resolved).root) {
+  // Check forbidden system roots & credential directories
+  if (isForbiddenSystemPath(resolved)) {
     return {
       isValid: false,
       hasPackageJson: false,
@@ -49,7 +111,7 @@ export function validateRepositoryPath(targetPath: string): PathValidationResult
       hasPrisma: false,
       isMonorepo: false,
       errorCode: 'FORBIDDEN_SYSTEM_ROOT',
-      errorMessage: `Scanning root system directory '${resolved}' is rejected for safety.`,
+      errorMessage: `Scanning system or protected directory '${resolved}' is rejected for safety.`,
     };
   }
 
@@ -80,6 +142,18 @@ export function validateRepositoryPath(targetPath: string): PathValidationResult
       isMonorepo: false,
       errorCode: 'CANONICALIZATION_FAILED',
       errorMessage: `Failed to resolve real path: ${msg}`,
+    };
+  }
+
+  if (isForbiddenSystemPath(canonicalPath)) {
+    return {
+      isValid: false,
+      hasPackageJson: false,
+      hasTsConfig: false,
+      hasPrisma: false,
+      isMonorepo: false,
+      errorCode: 'FORBIDDEN_SYSTEM_ROOT',
+      errorMessage: `Scanning system or protected directory '${canonicalPath}' is rejected for safety.`,
     };
   }
 

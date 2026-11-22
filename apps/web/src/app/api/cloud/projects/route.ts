@@ -3,22 +3,35 @@ import { currentUser } from '@clerk/nextjs/server';
 import { getDb, users, projects, architectureSnapshots } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
+import { checkRateLimit } from '@/lib/server-security';
 
 export const dynamic = 'force-static';
+
+const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2 MB cap
 
 const saveProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  repositoryUrl: z.string().url().optional().or(z.literal('')),
+  repositoryUrl: z
+    .string()
+    .url()
+    .refine(val => val.startsWith('https://') || val.startsWith('http://'), {
+      message: 'Repository URL must use http or https protocol',
+    })
+    .optional()
+    .or(z.literal('')),
   isPublic: z.boolean().optional(),
-  versionLabel: z.string().optional(),
+  versionLabel: z.string().max(64).optional(),
   graphData: z.record(z.unknown()),
-  nodeCount: z.number().int().nonnegative(),
-  edgeCount: z.number().int().nonnegative(),
+  nodeCount: z.number().int().nonnegative().max(100000),
+  edgeCount: z.number().int().nonnegative().max(250000),
   scanStats: z.record(z.unknown()).optional(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
+  const rateLimitResponse = checkRateLimit(req, 'api-cloud-projects-get', 30, 60_000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const user = await currentUser();
     if (!user) {
@@ -28,7 +41,7 @@ export async function GET() {
     const db = getDb();
     if (!db) {
       return NextResponse.json(
-        { error: 'Neon database not configured. Please set DATABASE_URL.' },
+        { error: 'Cloud database not configured.' },
         { status: 503 }
       );
     }
@@ -40,8 +53,7 @@ export async function GET() {
       .orderBy(desc(projects.updatedAt));
 
     return NextResponse.json({ projects: userProjects });
-  } catch (err: unknown) {
-    console.error('Error fetching cloud projects:', err);
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch cloud projects' },
       { status: 500 }
@@ -50,6 +62,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const rateLimitResponse = checkRateLimit(req, 'api-cloud-projects-post', 15, 60_000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const user = await currentUser();
     if (!user) {
@@ -59,23 +74,36 @@ export async function POST(req: Request) {
     const db = getDb();
     if (!db) {
       return NextResponse.json(
-        { error: 'Neon database not configured. Please set DATABASE_URL.' },
+        { error: 'Cloud database not configured.' },
         { status: 503 }
       );
     }
 
-    const body = await req.json();
+    const rawText = await req.text();
+    if (rawText.length > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json(
+        { error: 'Snapshot payload exceeds the 2 MB size limit.' },
+        { status: 413 }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+      return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 });
+    }
+
     const parseResult = saveProjectSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Invalid payload', details: parseResult.error.flatten() },
+        { error: 'Invalid payload' },
         { status: 400 }
       );
     }
 
     const data = parseResult.data;
 
-    // Ensure user exists in db
     await db
       .insert(users)
       .values({
@@ -97,7 +125,6 @@ export async function POST(req: Request) {
         },
       });
 
-    // Create project
     const [newProject] = await db
       .insert(projects)
       .values({
@@ -113,7 +140,6 @@ export async function POST(req: Request) {
       throw new Error('Failed to create project record in database');
     }
 
-    // Create architecture snapshot
     const [snapshot] = await db
       .insert(architectureSnapshots)
       .values({
@@ -127,13 +153,26 @@ export async function POST(req: Request) {
       .returning();
 
     return NextResponse.json({
-      project: newProject,
-      snapshot,
+      project: {
+        id: newProject.id,
+        name: newProject.name,
+        description: newProject.description,
+        isPublic: newProject.isPublic,
+        createdAt: newProject.createdAt,
+      },
+      snapshot: snapshot
+        ? {
+            id: snapshot.id,
+            versionLabel: snapshot.versionLabel,
+            nodeCount: snapshot.nodeCount,
+            edgeCount: snapshot.edgeCount,
+            createdAt: snapshot.createdAt,
+          }
+        : null,
     });
-  } catch (err: unknown) {
-    console.error('Error saving cloud project:', err);
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to save project to Neon database' },
+      { error: 'Failed to save project snapshot' },
       { status: 500 }
     );
   }

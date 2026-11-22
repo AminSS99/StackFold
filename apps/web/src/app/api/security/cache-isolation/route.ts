@@ -9,51 +9,21 @@ import {
   runCacheIsolationProbe,
   type PlaywrightModuleLike,
 } from '@stackfold/scanner';
+import {
+  checkRateLimit,
+  isLoopbackUrl,
+  resolveSafeTarget,
+  sanitizeConfigPath,
+} from '@/lib/server-security';
 
-// Static-export compatible: all other API routes use force-static so the
-// Tauri `NEXT_EXPORT=true` build can collect pages without a Node server.
-// Desktop never calls this route — it uses Tauri commands via the platform
-// adapter. Web deployments call it explicitly through WebPlatformAdapter.
 export const dynamic = 'force-static';
 
 const requestSchema = z.object({
-  rootPath: z.string().min(1).optional(),
+  rootPath: z.string().min(1).max(1024).optional(),
   fixture: z.string().min(1).max(120).optional(),
 });
 
-const FIXTURE_IDS = new Set([
-  'cache-isolation-vulnerable',
-  'sample-ecommerce-app',
-  'sample-monorepo-platform',
-  'preview-fence-vercel-supabase',
-  'tx-escape-prisma',
-  'scopepatch-idtrace',
-  'stackfold-self',
-]);
-
-function resolveTargetRoot(rootPath?: string, fixture?: string): { root: string; source: string } {
-  if (fixture) {
-    if (!FIXTURE_IDS.has(fixture)) {
-      throw new Error(`Unknown bundled fixture: '${fixture}'.`);
-    }
-    if (fixture === 'stackfold-self') {
-      return { root: path.resolve(process.cwd(), '../../'), source: 'fixture:stackfold-self' };
-    }
-    return { root: path.resolve(process.cwd(), `../../fixtures/${fixture}`), source: `fixture:${fixture}` };
-  }
-  if (rootPath) {
-    const canonical = path.resolve(rootPath);
-    const workspaceRoot = path.resolve(process.cwd(), '../../');
-    // Local-first bound: only allow paths inside the workspace parent or the
-    // fixture tree to avoid arbitrary filesystem reads from the web server.
-    // Absolute system paths are rejected; the desktop path uses Tauri commands.
-    if (!canonical.startsWith(workspaceRoot) && !canonical.startsWith('/tmp/')) {
-      throw new Error('rootPath is outside the allowed local workspace.');
-    }
-    return { root: canonical, source: 'selected-project' };
-  }
-  return { root: path.resolve(process.cwd(), '../../fixtures/cache-isolation-vulnerable'), source: 'fixture:cache-isolation-vulnerable' };
-}
+const CACHE_FIXTURES = new Set(['cache-isolation-vulnerable']);
 
 function resultCandidates(root: string): string[] {
   return [
@@ -63,12 +33,12 @@ function resultCandidates(root: string): string[] {
 }
 
 async function fixtureIsRunning(baseUrl: string): Promise<boolean> {
+  if (!isLoopbackUrl(baseUrl)) return false;
   try {
     const response = await fetch(`${baseUrl}/api/me`, {
       headers: { 'x-stackfold-test-session': 'fixture-health-check' },
       cache: 'no-store',
     });
-    // Any HTTP response (including 200 with anonymous identity) proves liveness.
     return response.status > 0;
   } catch {
     return false;
@@ -84,6 +54,9 @@ async function waitForFixture(baseUrl: string): Promise<void> {
 }
 
 export async function GET(request: Request) {
+  const rateLimitResponse = checkRateLimit(request, 'api-sec-cache-get', 40, 60_000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const url = new URL(request.url);
     const parsed = requestSchema.safeParse({
@@ -96,46 +69,75 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    let target: { root: string; source: string };
+
+    let target: ReturnType<typeof resolveSafeTarget>;
     try {
-      target = resolveTargetRoot(parsed.data.rootPath, parsed.data.fixture);
+      target = resolveSafeTarget({
+        req: request,
+        rootPath: parsed.data.rootPath,
+        fixture: parsed.data.fixture,
+        defaultFixture: 'cache-isolation-vulnerable',
+        allowedFixtures: CACHE_FIXTURES,
+      });
     } catch (error) {
       return NextResponse.json(
         { success: false, error: error instanceof Error ? error.message : 'Invalid target.', code: 'INVALID_TARGET' },
         { status: 400 }
       );
     }
+
     let configPath = '';
     try {
-      ({ configPath } = loadCacheIsolationConfig(target.root));
+      ({ configPath } = loadCacheIsolationConfig(target.physicalRoot));
     } catch {
       return NextResponse.json(
-        { success: false, error: `No Cache Isolation configuration found for '${target.source}'. Add .stackfold/cache-isolation.json.`, code: 'MISSING_CONFIGURATION', source: target.source },
+        {
+          success: false,
+          error: `No Cache Isolation configuration found for '${target.source}'. Add .stackfold/cache-isolation.json.`,
+          code: 'MISSING_CONFIGURATION',
+          source: target.source,
+        },
         { status: 404 }
       );
     }
-    for (const candidate of resultCandidates(target.root)) {
+
+    const safeConfigPath = sanitizeConfigPath(configPath, target.physicalRoot);
+    for (const candidate of resultCandidates(target.physicalRoot)) {
       try {
         const content = fs.readFileSync(candidate, 'utf8');
         const result = parseCacheIsolationResult(content);
-        return NextResponse.json({ success: true, result, source: `recorded:${target.source}`, configPath });
+        return NextResponse.json({
+          success: true,
+          result,
+          source: `recorded:${target.source}`,
+          configPath: safeConfigPath,
+        });
       } catch {
         continue;
       }
     }
     return NextResponse.json(
-      { success: false, error: `No recorded Cache Isolation result found for '${target.source}'. Run a live probe first.`, code: 'MISSING_RECORDED_RESULT', source: target.source, configPath },
+      {
+        success: false,
+        error: `No recorded Cache Isolation result found for '${target.source}'. Run a live probe first.`,
+        code: 'MISSING_RECORDED_RESULT',
+        source: target.source,
+        configPath: safeConfigPath,
+      },
       { status: 404 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unable to read recorded result.', code: 'RECORDED_LOAD_FAILED' },
+      { success: false, error: 'Unable to read recorded result.', code: 'RECORDED_LOAD_FAILED' },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
+  const rateLimitResponse = checkRateLimit(request, 'api-sec-cache-post', 15, 60_000);
+  if (rateLimitResponse) return rateLimitResponse;
+
   let fixtureProcess: ChildProcess | undefined;
   try {
     let body: unknown = {};
@@ -151,9 +153,16 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    let target: { root: string; source: string };
+
+    let target: ReturnType<typeof resolveSafeTarget>;
     try {
-      target = resolveTargetRoot(parsed.data.rootPath, parsed.data.fixture);
+      target = resolveSafeTarget({
+        req: request,
+        rootPath: parsed.data.rootPath,
+        fixture: parsed.data.fixture,
+        defaultFixture: 'cache-isolation-vulnerable',
+        allowedFixtures: CACHE_FIXTURES,
+      });
     } catch (error) {
       return NextResponse.json(
         { success: false, error: error instanceof Error ? error.message : 'Invalid target.', code: 'INVALID_TARGET' },
@@ -164,21 +173,45 @@ export async function POST(request: Request) {
     let config: ReturnType<typeof loadCacheIsolationConfig>['config'];
     let configPath = '';
     try {
-      ({ config, configPath } = loadCacheIsolationConfig(target.root));
+      ({ config, configPath } = loadCacheIsolationConfig(target.physicalRoot));
     } catch {
       return NextResponse.json(
-        { success: false, error: `No Cache Isolation configuration found for '${target.source}'. Add .stackfold/cache-isolation.json.`, code: 'MISSING_CONFIGURATION', source: target.source },
+        {
+          success: false,
+          error: `No Cache Isolation configuration found for '${target.source}'. Add .stackfold/cache-isolation.json.`,
+          code: 'MISSING_CONFIGURATION',
+          source: target.source,
+        },
         { status: 404 }
       );
     }
 
-    // Resolve credential and marker values from environment references only.
-    // Values are never rendered, serialized, logged, or persisted.
+    const safeConfigPath = sanitizeConfigPath(configPath, target.physicalRoot);
+
+    // SSRF Guard: Only allow loopback targets in live browser probes
+    if (!isLoopbackUrl(config.baseUrl)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cache Isolation probes only permit local loopback target URLs (localhost / 127.0.0.1).',
+          code: 'INVALID_TARGET_URL',
+          source: target.source,
+          configPath: safeConfigPath,
+        },
+        { status: 400 }
+      );
+    }
+
     const missingEnv: string[] = [];
-    for (const name of [config.authentication.sessionAEnv, config.authentication.sessionBEnv, config.markers.sessionAMarkerEnv, config.markers.sessionBMarkerEnv]) {
+    for (const name of [
+      config.authentication.sessionAEnv,
+      config.authentication.sessionBEnv,
+      config.markers.sessionAMarkerEnv,
+      config.markers.sessionBMarkerEnv,
+    ]) {
       if (!process.env[name]) missingEnv.push(name);
     }
-    const isBundledDemo = target.source === 'fixture:cache-isolation-vulnerable' && !parsed.data.rootPath;
+    const isBundledDemo = target.source === 'fixture:cache-isolation-vulnerable';
     const env: Record<string, string | undefined> = { ...process.env };
     if (isBundledDemo) {
       env.STACKFOLD_SESSION_A ||= 'fixture-auth-alpha';
@@ -188,31 +221,48 @@ export async function POST(request: Request) {
     }
     if (missingEnv.length > 0 && !isBundledDemo) {
       return NextResponse.json(
-        { success: false, error: `Missing environment references: ${missingEnv.join(', ')}.`, code: 'MISSING_ENVIRONMENT', source: target.source, configPath, missingEnv },
+        {
+          success: false,
+          error: `Missing environment references: ${missingEnv.join(', ')}.`,
+          code: 'MISSING_ENVIRONMENT',
+          source: target.source,
+          configPath: safeConfigPath,
+          missingEnv,
+        },
         { status: 412 }
       );
     }
 
-    // Only the bundled demo auto-starts its fixture server. Selected projects
-    // must already be running; otherwise report target-unavailable.
     const alreadyRunning = await fixtureIsRunning(config.baseUrl);
     if (!alreadyRunning) {
       if (isBundledDemo) {
         fixtureProcess = spawn(process.execPath, ['server.mjs'], {
-          cwd: target.root,
+          cwd: target.physicalRoot,
           stdio: 'ignore',
         });
         try {
           await waitForFixture(config.baseUrl);
         } catch (error) {
           return NextResponse.json(
-            { success: false, error: error instanceof Error ? error.message : 'Target application unavailable.', code: 'TARGET_UNAVAILABLE', source: target.source, configPath },
+            {
+              success: false,
+              error: error instanceof Error ? error.message : 'Target application unavailable.',
+              code: 'TARGET_UNAVAILABLE',
+              source: target.source,
+              configPath: safeConfigPath,
+            },
             { status: 502 }
           );
         }
       } else {
         return NextResponse.json(
-          { success: false, error: `Target application at '${config.baseUrl}' is unavailable. Start the selected project first.`, code: 'TARGET_UNAVAILABLE', source: target.source, configPath },
+          {
+            success: false,
+            error: `Target application at '${config.baseUrl}' is unavailable. Start the selected project first.`,
+            code: 'TARGET_UNAVAILABLE',
+            source: target.source,
+            configPath: safeConfigPath,
+          },
           { status: 502 }
         );
       }
@@ -224,25 +274,39 @@ export async function POST(request: Request) {
       playwright = { chromium: (imported as unknown as { chromium: PlaywrightModuleLike['chromium'] }).chromium };
     } catch {
       return NextResponse.json(
-        { success: false, error: 'Playwright browser automation is unavailable in this environment.', code: 'PLAYWRIGHT_UNAVAILABLE', source: target.source, configPath },
+        {
+          success: false,
+          error: 'Playwright browser automation is unavailable in this environment.',
+          code: 'PLAYWRIGHT_UNAVAILABLE',
+          source: target.source,
+          configPath: safeConfigPath,
+        },
         { status: 501 }
       );
     }
 
     try {
       const result = await runCacheIsolationProbe(config, { headless: true, playwright, env });
-      return NextResponse.json({ success: true, result, source: `live:${target.source}`, configPath });
+      return NextResponse.json({
+        success: true,
+        result,
+        source: `live:${target.source}`,
+        configPath: safeConfigPath,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Cache Isolation probe failed.';
-      const code = message.includes('did not become reachable') || message.includes('Navigation') ? 'TARGET_UNAVAILABLE' : 'PROBE_FAILED';
+      const code =
+        message.includes('did not become reachable') || message.includes('Navigation')
+          ? 'TARGET_UNAVAILABLE'
+          : 'PROBE_FAILED';
       return NextResponse.json(
-        { success: false, error: message, code, source: target.source, configPath },
+        { success: false, error: message, code, source: target.source, configPath: safeConfigPath },
         { status: code === 'TARGET_UNAVAILABLE' ? 502 : 500 }
       );
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Cache Isolation probe failed.', code: 'PROBE_FAILED' },
+      { success: false, error: 'Cache Isolation probe failed.', code: 'PROBE_FAILED' },
       { status: 500 }
     );
   } finally {

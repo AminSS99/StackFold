@@ -20,7 +20,7 @@ import { clsx } from 'clsx';
 import Image from 'next/image';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
 import { getPlatformAdapter } from '@stackfold/platform';
-import { asset } from '@/lib/demo';
+import { asset, isRemoteWebHost } from '@/lib/demo';
 
 export function OnboardingModal() {
   const isOpen = useStackfoldStore(s => s.isOnboardingModalOpen);
@@ -47,6 +47,7 @@ export function OnboardingModal() {
 
   const adapter = getPlatformAdapter();
   const isDesktop = adapter.isDesktop();
+  const isHostedWeb = !isDesktop && isRemoteWebHost();
 
   useEffect(() => {
     if (isOpen) {
@@ -142,7 +143,8 @@ export function OnboardingModal() {
             </div>
           )}
 
-          {/* Section 1: Local Path / Native Picker */}
+          {/* Section 1: Local Path / Native Picker (only shown on desktop or localhost dev) */}
+          {!isHostedWeb && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="font-semibold text-slate-200 flex items-center gap-1.5 text-xs">
@@ -150,7 +152,7 @@ export function OnboardingModal() {
                 Local Repository Directory
               </label>
               <span className="text-[11px] text-slate-400">
-                {isDesktop ? 'Native folder dialog available' : 'Absolute path on host machine'}
+                {isDesktop ? 'Native folder dialog available' : 'Local machine directory'}
               </span>
             </div>
 
@@ -243,11 +245,12 @@ export function OnboardingModal() {
               )}
             </div>
           </div>
+          )}
 
           {/* Section 2: Bundled Sample Fixtures */}
-          <div className="space-y-2 pt-2 border-t border-[#1c2233]">
+          <div className={clsx('space-y-2', !isHostedWeb && 'pt-2 border-t border-[#1c2233]')}>
             <div className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
-              Or Explore Test Fixtures
+              {isHostedWeb ? 'Explore Bundled Architecture & Security Fixtures' : 'Or Explore Test Fixtures'}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button

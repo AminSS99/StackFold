@@ -12,6 +12,7 @@ const isStaticExport = process.env.NEXT_EXPORT === 'true' || isStaticDemo;
 const basePath = isStaticDemo ? process.env.NEXT_PUBLIC_BASE_PATH || undefined : undefined;
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   output: isStaticExport ? 'export' : undefined,
   basePath,
   trailingSlash: isStaticDemo ? true : undefined,
@@ -21,6 +22,25 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['@stackfold/graph', '@stackfold/platform', '@stackfold/scanner'],
   serverExternalPackages: ['typescript', 'fast-glob', 'playwright'],
+  ...(!isStaticExport
+    ? {
+        headers: async () => [
+          {
+            source: '/(.*)',
+            headers: [
+              { key: 'X-Content-Type-Options', value: 'nosniff' },
+              { key: 'X-Frame-Options', value: 'DENY' },
+              { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+              {
+                key: 'Permissions-Policy',
+                value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+              },
+              { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+            ],
+          },
+        ],
+      }
+    : {}),
   ...(isStaticExport
     ? {
         turbopack: {

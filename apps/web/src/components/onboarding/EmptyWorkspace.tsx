@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -18,13 +18,18 @@ import {
   Play,
 } from 'lucide-react';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
-import { IS_STATIC_DEMO, asset } from '@/lib/demo';
+import { IS_STATIC_DEMO, asset, isRemoteWebHost } from '@/lib/demo';
 import { WalkthroughVideo } from '@/components/media/WalkthroughVideo';
 
 export function EmptyWorkspace() {
   const setOnboardingModalOpen = useStackfoldStore(s => s.setOnboardingModalOpen);
   const scan = useStackfoldStore(s => s.scan);
   const recentProjects = useStackfoldStore(s => s.recentProjects);
+  const [isHostedWeb, setIsHostedWeb] = useState(IS_STATIC_DEMO);
+
+  useEffect(() => {
+    setIsHostedWeb(isRemoteWebHost());
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col items-center p-6 sm:p-10 bg-[#070806] overflow-y-auto select-none">
@@ -43,8 +48,8 @@ export function EmptyWorkspace() {
 
         {/* Primary Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto text-left">
-          {/* Open Local Repo (hosted demo: Security Lab entry instead, no filesystem access) */}
-          {IS_STATIC_DEMO ? (
+          {/* Open Local Repo (hosted web/demo: Security Lab entry instead, no server filesystem probing) */}
+          {isHostedWeb ? (
             <Link
               href="/security-lab/queue"
               className="p-5 rounded-xl bg-[#f6c945] hover:bg-[#ffda67] border border-[#f6c945] shadow-xl shadow-[#f6c945]/10 transition-all group flex flex-col justify-between text-[#070806]"

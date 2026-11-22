@@ -150,7 +150,16 @@ export class WebPlatformAdapter implements PlatformAdapter {
       const raw = localStorage.getItem(RECENT_PROJECTS_STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((entry: RecentProjectEntry) => {
+        if (typeof entry?.path === 'string' && entry.path.includes('/var/task/fixtures/')) {
+          const id = entry.path.split('/var/task/fixtures/')[1]?.split('/')[0];
+          if (id) {
+            return { ...entry, path: `fixtures/${id}`, isFixture: true, fixtureId: entry.fixtureId || id };
+          }
+        }
+        return entry;
+      });
     } catch {
       return [];
     }
@@ -186,8 +195,20 @@ export class WebPlatformAdapter implements PlatformAdapter {
     rootPath: string,
     editor: PreferredEditor = 'vscode'
   ): Promise<{ success: boolean; url?: string; error?: string }> {
+    if (filePath.includes('..') || rootPath.includes('..') || filePath.includes('\0') || rootPath.includes('\0')) {
+      return { success: false, error: 'Invalid path traversal sequence rejected' };
+    }
     const cleanFile = filePath.replace(/^\/+/, '');
     const cleanRoot = rootPath.replace(/\/+$/, '');
+
+    // If viewing a bundled fixture on the web, open the source file in GitHub rather than a non-existent local editor URI.
+    const fixtureMatch = cleanRoot.match(/^(?:\/?demo\/|\/?fixtures\/|\[Fixture\]\s*)([a-z0-9-]+)$/i);
+    if (fixtureMatch?.[1]) {
+      const githubUrl = `https://github.com/AminSS99/StackFold/blob/main/fixtures/${fixtureMatch[1]}/${cleanFile}`;
+      await this.openExternalUrl(githubUrl);
+      return { success: true, url: githubUrl };
+    }
+
     const fullPath = `${cleanRoot}/${cleanFile}`;
 
     let url: string;
@@ -212,7 +233,14 @@ export class WebPlatformAdapter implements PlatformAdapter {
 
   async openExternalUrl(url: string): Promise<void> {
     if (typeof window !== 'undefined') {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      try {
+        const base = window.location?.origin || 'https://stack-fold-web.vercel.app';
+        const parsed = new URL(url, base);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+        window.open(parsed.toString(), '_blank', 'noopener,noreferrer');
+      } catch {
+        // Ignore malformed URLs
+      }
     }
   }
 
