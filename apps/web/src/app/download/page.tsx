@@ -1,5 +1,6 @@
 'use client';
 
+import snapCredit from './snap-credit.module.css';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -28,6 +29,8 @@ import { Badge } from '@/components/ui/Badge';
 import { stackfoldLinks } from '@/config/links';
 import { currentRelease } from '@/config/release';
 import { detectUserPlatform, type UserPlatform } from '@/lib/media';
+import { asset } from '@/lib/demo';
+import { WalkthroughVideo } from '@/components/media/WalkthroughVideo';
 
 type StoryKey = 'architecture' | 'impact' | 'database';
 
@@ -47,7 +50,7 @@ const STORIES: Story[] = [
     headline: 'Unified System Topology',
     description:
       'Deterministic Dagre layout maps Next.js applications, API handlers, Prisma models, and workspace packages in one responsive canvas.',
-    image: '/screenshots/04-architecture-view.png',
+    image: asset('/screenshots/04-architecture-view.png'),
     icon: <Layers className="w-4 h-4" />,
   },
   {
@@ -56,7 +59,7 @@ const STORIES: Story[] = [
     headline: 'Blast-Radius Change Analysis',
     description:
       'Select any entity to trace direct and transitive dependents. Every relationship links directly to source file line ranges and AST rules.',
-    image: '/screenshots/07-node-inspector.png',
+    image: asset('/screenshots/07-node-inspector.png'),
     icon: <Activity className="w-4 h-4" />,
   },
   {
@@ -65,7 +68,7 @@ const STORIES: Story[] = [
     headline: 'Prisma & Relational Models',
     description:
       'Inspect database schema structures, foreign key relationships, and connected route handlers without running a live database.',
-    image: '/screenshots/06-database-view.png',
+    image: asset('/screenshots/06-database-view.png'),
     icon: <Database className="w-4 h-4" />,
   },
 ];
@@ -136,6 +139,12 @@ export default function DownloadPage() {
 
         <nav className="flex items-center gap-4 text-xs font-medium text-[#a5aa9b]" aria-label="Product navigation">
           <a
+            href="#walkthrough"
+            className="hidden sm:inline-block hover:text-[#f6f7f2] transition-colors"
+          >
+            Watch
+          </a>
+          <a
             href="#proof"
             className="hidden sm:inline-block hover:text-[#f6f7f2] transition-colors"
           >
@@ -176,9 +185,19 @@ export default function DownloadPage() {
       <main className="flex-1 max-w-6xl mx-auto px-6 py-12 space-y-20 w-full">
         {/* Hero Section */}
         <section className="text-center space-y-6 max-w-3xl mx-auto pt-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(246,201,69,0.12)] border border-[#f6c945]/30 text-[#f6c945] text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Industrial Architecture Intelligence • Apache 2.0</span>
+          <div className="flex flex-col items-center gap-3">
+            <Image
+              src={asset('/logo.png')}
+              alt="Stackfold"
+              width={72}
+              height={72}
+              className="w-18 h-18 rounded-2xl border border-[#f6c945]/35 shadow-[0_0_40px_rgba(246,201,69,0.18)]"
+              priority
+            />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(246,201,69,0.12)] border border-[#f6c945]/30 text-[#f6c945] text-xs font-medium">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Industrial Architecture Intelligence • Apache 2.0</span>
+            </div>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#f6f7f2] leading-[1.1]">
@@ -203,6 +222,19 @@ export default function DownloadPage() {
                 className="w-full sm:w-auto font-bold px-8 shadow-xl shadow-[#f6c945]/15"
               >
                 Download for macOS (Apple Silicon)
+              </Button>
+            </a>
+
+            <a
+              href="#walkthrough"
+              className="w-full sm:w-auto"
+            >
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full sm:w-auto border-[#f6c945]/40 text-[#f6f7f2] hover:border-[#f6c945]"
+              >
+                Watch 50s Walkthrough
               </Button>
             </a>
 
@@ -237,6 +269,9 @@ export default function DownloadPage() {
             )}
           </div>
         </section>
+
+        {/* Product walkthrough (hosted demo only) */}
+        <WalkthroughVideo />
 
         {/* Trust Strip */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-[#2a2d24] text-xs">
@@ -473,6 +508,15 @@ export default function DownloadPage() {
 
         {/* Open Source / Community CTA */}
         <section className="text-center p-10 rounded-2xl bg-gradient-to-b from-[#141611] to-[#0d0f0c] border border-[#2a2d24] space-y-4">
+          <div className="flex justify-center">
+            <Image
+              src={asset('/logo.png')}
+              alt="Stackfold"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-xl border border-[#f6c945]/30 shadow-[0_0_24px_rgba(246,201,69,0.14)]"
+            />
+          </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#f6f7f2]">
             Free, Open Source, and Built in Public
           </h2>
@@ -501,6 +545,9 @@ export default function DownloadPage() {
 
       {/* Footer */}
       <footer className="border-t border-[#2a2d24] py-8 text-center text-xs text-[#74796d] space-y-3 bg-[#0d0f0c]">
+        <div className="flex justify-center pb-1">
+          <Logo size="sm" versionBadge={currentRelease.version} />
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-6 text-[#a5aa9b]">
           <a
             href={stackfoldLinks.repository}
@@ -550,6 +597,10 @@ export default function DownloadPage() {
         </div>
         <div>Stackfold Architecture Intelligence • Developed with Industrial Precision</div>
       </footer>
+      <a className={snapCredit.badge} href="https://www.snapsolve.ink/">
+        <span>Made by</span>
+        <span className={snapCredit.wordmark}>SnapSolve</span>
+      </a>
     </div>
   );
 }

@@ -7,6 +7,8 @@ export * from './types';
 export { WebPlatformAdapter } from './adapters/web';
 export { TauriPlatformAdapter } from './adapters/tauri';
 export { MockPlatformAdapter } from './adapters/mock';
+export { StaticDemoPlatformAdapter } from './adapters/demo';
+export type { StaticDemoOptions } from './adapters/demo';
 
 let activePlatformAdapter: PlatformAdapter | null = null;
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { clsx } from 'clsx';
+import { asset } from '@/lib/demo';
 
 export interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -30,7 +31,7 @@ export function Logo({
         style={{ width: dimensions.px, height: dimensions.px }}
       >
         <Image
-          src="/logo.png"
+          src={asset('/logo.png')}
           alt="Stackfold Logo"
           width={dimensions.px}
           height={dimensions.px}

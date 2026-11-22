@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Stackfold — The Complete Product & Contributor Manual
 
 Stackfold is an open-source visual control center and architectural intelligence engine for software codebases. It scans a repository and builds an interactive, deterministic system map showing applications, API routes, database models, dependencies, external services, and configuration flows.
@@ -30,7 +32,6 @@ Stackfold is **not** a conversational coding chatbot or a code-generation agent.
    - [Writing a New Scanner Detector](#writing-a-new-scanner-detector)
    - [Adding a Test Fixture](#adding-a-test-fixture)
    - [Verification Commands](#verification-commands)
-7. [Open-Source Launch Checklist](#7-open-source-launch-checklist)
 
 ---
 
@@ -314,32 +315,3 @@ pnpm build:web
 # 5. Production Desktop application packaging
 pnpm build:desktop
 ```
-
----
-
-## 7. Open-Source Launch Checklist
-
-When you are ready to publish the repository to GitHub:
-
-1. **Choose License:** In [`LICENSE`](LICENSE), select either **Apache License 2.0** or **MIT License** and replace the placeholder text with your choice.
-2. **Review Git Status:**
-   ```bash
-   git status
-   ```
-   Confirm that build outputs (`target/`, `out/`, `*.tsbuildinfo`, `dist/`) are ignored.
-3. **Commit & Tag:**
-   ```bash
-   git add .
-   git commit -m "feat: release Stackfold v0.1.0"
-   git tag -a v0.1.0 -m "Release v0.1.0"
-   ```
-4. **Push to GitHub:**
-   ```bash
-   git remote add origin https://github.com/<your-username>/stackfold.git
-   git branch -M main
-   git push -u origin main --tags
-   ```
-5. **Create GitHub Release:**
-   - Copy content from [`RELEASE_NOTES_v0.1.0.md`](RELEASE_NOTES_v0.1.0.md).
-   - Attach the pre-built installer: `apps/desktop/src-tauri/target/release/bundle/dmg/Stackfold_0.1.0_aarch64.dmg`.
-   - Include the SHA256 checksum from [`SHA256SUMS.txt`](SHA256SUMS.txt).

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { clsx } from 'clsx';
 import {
   Sparkles,
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { isCloudEnabled } from '@/lib/cloud';
+import { asset } from '@/lib/demo';
 
 interface ContextBarProps {
   onToggleFilters?: () => void;
@@ -66,6 +68,13 @@ export function ContextBar({
     <header className="h-14 px-4 bg-[#0d0f0c] border-b border-[#2a2d24] flex items-center justify-between gap-4 select-none shrink-0 z-10">
       {/* Left: View title & Project stats */}
       <div className="flex items-center gap-3 min-w-0">
+        <Image
+          src={asset('/logo.png')}
+          alt="Stackfold"
+          width={22}
+          height={22}
+          className="w-5 h-5 rounded-md border border-[#f6c945]/30 shrink-0"
+        />
         <h1 className="text-xs font-semibold text-[#f6f7f2] truncate">
           {viewTitles[activeView] || 'Architecture Map'}
         </h1>

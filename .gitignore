@@ -72,3 +72,28 @@ pnpm-debug.log*
 
 # Scratch & temporary scripts
 scratch/
+
+# Hosted demo build artifacts
+apps/web/public/demo-data/
+packages/scanner/.demo-tmp/
+
+# Promo video: dependencies, rendered output and regenerable captured frames
+promo/node_modules/
+promo/out/
+promo/public/shots/
+.vercel
+
+# Internal planning & AI agent briefs
+docs/ARCHITECTURE_RISK_PLATFORM_PLAN.md
+docs/GITHUB_READINESS.md
+docs/WEB_APP_UI_IMPLEMENTATION_PLAN.md
+docs/internal/
+RELEASE_NOTES_v0.1.0.md
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+CODEX.md
+.cursorrules
+.claude/
+.codex/
+.gemini/

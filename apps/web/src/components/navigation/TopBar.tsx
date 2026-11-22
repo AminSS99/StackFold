@@ -9,6 +9,7 @@ import { useStackfoldStore } from '@/store/useStackfoldStore';
 import { IconButton } from '@/components/ui/IconButton';
 import { stackfoldLinks } from '@/config/links';
 import type { GraphViewType } from '@stackfold/graph';
+import { asset } from '@/lib/demo';
 
 const VIEWS: Array<{ id: GraphViewType; label: string; icon: React.ReactNode }> = [
   { id: 'architecture', label: 'Architecture', icon: <Layers className="h-4 w-4" /> },
@@ -40,7 +41,7 @@ export function TopBar({ filtersOpen, onToggleFilters }: TopBarProps) {
   return <header className="z-30 shrink-0 border-b border-[#2a2d24] bg-[#0d0f0c]/95 backdrop-blur-xl">
     <div className="flex h-14 items-center gap-2 px-3 sm:px-4">
       <button onClick={() => setOnboardingModalOpen(true)} className="flex min-w-0 items-center gap-2 rounded-lg p-1 text-left transition-colors hover:bg-[#1b1e17]" aria-label="Open project picker">
-        <Image src="/logo.png" alt="Stackfold" width={28} height={28} className="h-7 w-7 rounded-md" priority />
+        <Image src={asset('/logo.png')} alt="Stackfold" width={28} height={28} className="h-7 w-7 rounded-md" priority />
         <span className="hidden text-[13px] font-bold tracking-[0.16em] text-[#f6f7f2] sm:block">STACKFOLD</span>
       </button>
       <div className="hidden h-5 w-px bg-[#2a2d24] md:block" />

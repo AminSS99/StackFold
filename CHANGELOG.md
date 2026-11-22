@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Changelog
 
 All notable changes to Stackfold are documented in this file.

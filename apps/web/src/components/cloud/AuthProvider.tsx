@@ -3,6 +3,7 @@
 import React from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
 import { hasClerkKey } from '@/lib/cloud';
+import '@/lib/platform-bootstrap';
 
 // Local-first: Clerk is initialized only when a real publishable key is
 // configured. Without it (local dev, CI, static desktop export) children

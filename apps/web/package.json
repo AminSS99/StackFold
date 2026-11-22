@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3000",
-    "build": "next build",
-    "build:export": "NEXT_EXPORT=true next build",
+    "dev": "node scripts/prebuild-demo.mjs && next dev --port 3000",
+    "build": "node scripts/prebuild-demo.mjs && next build",
+    "build:export": "NEXT_EXPORT=true NEXT_PUBLIC_DESKTOP_EXPORT=true node scripts/prebuild-demo.mjs && NEXT_EXPORT=true NEXT_PUBLIC_DESKTOP_EXPORT=true next build",
+    "build:demo-data": "node scripts/run-demo-data.mjs",
+    "build:demo": "NEXT_PUBLIC_STACKFOLD_DEMO=true node scripts/prebuild-demo.mjs && NEXT_PUBLIC_STACKFOLD_DEMO=true next build",
     "start": "next start",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit"

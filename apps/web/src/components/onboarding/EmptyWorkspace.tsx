@@ -15,8 +15,11 @@ import {
   Database,
   Globe,
   Download,
+  Play,
 } from 'lucide-react';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
+import { IS_STATIC_DEMO, asset } from '@/lib/demo';
+import { WalkthroughVideo } from '@/components/media/WalkthroughVideo';
 
 export function EmptyWorkspace() {
   const setOnboardingModalOpen = useStackfoldStore(s => s.setOnboardingModalOpen);
@@ -24,11 +27,11 @@ export function EmptyWorkspace() {
   const recentProjects = useStackfoldStore(s => s.recentProjects);
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-6 bg-[#070806] overflow-y-auto select-none">
-      <div className="max-w-4xl w-full space-y-9 text-center">
+    <div className="w-full h-full flex flex-col items-center p-6 sm:p-10 bg-[#070806] overflow-y-auto select-none">
+      <div className="max-w-4xl w-full my-auto space-y-9 text-center py-4">
         {/* Hero Branding */}
         <div className="space-y-3 flex flex-col items-center">
-          <Image src="/logo.png" alt="Stackfold" width={64} height={64} className="w-16 h-16 rounded-2xl shadow-[0_0_32px_rgba(246,201,69,0.12)]" priority />
+          <Image src={asset('/logo.png')} alt="Stackfold" width={64} height={64} className="w-16 h-16 rounded-2xl shadow-[0_0_32px_rgba(246,201,69,0.12)]" priority />
           <p className="text-[11px] font-mono uppercase tracking-[0.24em] text-[#f6c945]">Architecture intelligence, local by default</p>
           <h1 className="text-4xl font-extrabold text-[#f6f7f2] tracking-tight">
             See how your codebase fits together.
@@ -40,7 +43,27 @@ export function EmptyWorkspace() {
 
         {/* Primary Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto text-left">
-          {/* Open Local Repo */}
+          {/* Open Local Repo (hosted demo: Security Lab entry instead, no filesystem access) */}
+          {IS_STATIC_DEMO ? (
+            <Link
+              href="/security-lab/queue"
+              className="p-5 rounded-xl bg-[#f6c945] hover:bg-[#ffda67] border border-[#f6c945] shadow-xl shadow-[#f6c945]/10 transition-all group flex flex-col justify-between text-[#070806]"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-lg bg-[#070806]/10 text-[#070806] flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="font-bold text-[#070806] text-sm">Security Lab: Queue Compatibility</div>
+                <p className="text-xs text-[#514107]">
+                  Replay historical BullMQ payloads against a new worker and see the exact field that breaks.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center text-xs font-bold text-[#070806] gap-1 group-hover:translate-x-1 transition-transform">
+                <span>Try the replay</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </Link>
+          ) : (
           <button
             onClick={() => setOnboardingModalOpen(true)}
             className="p-5 rounded-xl bg-[#f6c945] hover:bg-[#ffda67] border border-[#f6c945] shadow-xl shadow-[#f6c945]/10 transition-all group flex flex-col justify-between text-[#070806]"
@@ -61,6 +84,7 @@ export function EmptyWorkspace() {
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </button>
+          )}
 
           {/* Sample E-Commerce Fixture */}
           <button
@@ -150,8 +174,17 @@ export function EmptyWorkspace() {
           </div>
         </div>
 
-        {/* Download Banner */}
-        <div className="pt-2 flex items-center justify-center">
+        {/* Download & Video Banner */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          {process.env.NEXT_PUBLIC_STACKFOLD_DESKTOP !== 'true' && (
+            <a
+              href="#walkthrough-inline"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#11130f] hover:bg-[#181b14] border border-[#f6c945]/40 hover:border-[#f6c945] text-xs text-slate-200 hover:text-[#f6c945] transition-colors shadow-lg"
+            >
+              <Play className="w-4 h-4 text-[#f6c945]" />
+              <span>Watch the <strong>50-second walkthrough</strong></span>
+            </a>
+          )}
           <Link
             href="/download"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#11130f] hover:bg-[#181b14] border border-[#2a2d24] hover:border-[#f6c945]/50 text-xs text-slate-300 hover:text-[#f6c945] transition-colors shadow-lg group"
@@ -160,6 +193,8 @@ export function EmptyWorkspace() {
             <span>Prefer a native desktop app? <strong>Download Stackfold for macOS (.dmg) &rarr;</strong></span>
           </Link>
         </div>
+
+        <WalkthroughVideo compact />
       </div>
     </div>
   );

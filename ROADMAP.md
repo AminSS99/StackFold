@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Stackfold Roadmap
 
 Stackfold is currently in **Early Alpha (v0.1.0)**. Our goal is to provide developers, architects, and engineering teams with an honest, visual context layer for software repositories.

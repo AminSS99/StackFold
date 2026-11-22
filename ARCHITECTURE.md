@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Stackfold Architecture & Technical Design
 
 Stackfold is a visual control center and architectural intelligence platform. It turns modern software codebases into interactive, deterministic system maps.

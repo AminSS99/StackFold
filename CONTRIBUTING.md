@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Contributing to Stackfold
 
 Thank you for contributing to Stackfold! Stackfold is a visual control center and intelligence layer for software architectures.

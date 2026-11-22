@@ -17,8 +17,10 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import Image from 'next/image';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
 import { getPlatformAdapter } from '@stackfold/platform';
+import { asset } from '@/lib/demo';
 
 export function OnboardingModal() {
   const isOpen = useStackfoldStore(s => s.isOnboardingModalOpen);
@@ -99,11 +101,13 @@ export function OnboardingModal() {
         {/* Modal Header */}
         <div className="p-5 border-b border-[#1c2233] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-black border border-amber-500/40 flex flex-col justify-center items-center gap-[3px] p-1.5 shadow-md shrink-0">
-              <div className="w-4 h-[3px] bg-amber-400 rounded-full ml-1" />
-              <div className="w-4 h-[3px] bg-amber-400 rounded-full" />
-              <div className="w-4 h-[3px] bg-amber-400 rounded-full mr-1" />
-            </div>
+            <Image
+              src={asset('/logo.png')}
+              alt="Stackfold"
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-xl border border-amber-500/40 shadow-md shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-100 tracking-wide">Open Project in Stackfold</h2>

@@ -14,10 +14,12 @@ import {
   XCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import Image from 'next/image';
 import Link from 'next/link';
 import { AppRail } from '@/components/shell/AppRail';
 import { getPlatformAdapter } from '@stackfold/platform';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
+import { asset } from '@/lib/demo';
 
 type PayloadVerdict = 'compatible' | 'review' | 'fail';
 
@@ -228,7 +230,7 @@ export function QueueCompatibilityLab() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[#2a2d24] bg-[#0d0f0c] px-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold"><Inbox className="h-4 w-4 text-[#f6c945]" />Security Lab</div>
+            <div className="flex items-center gap-2 text-xs font-semibold"><Image src={asset('/logo.png')} alt="Stackfold" width={20} height={20} className="h-5 w-5 rounded-md border border-[#f6c945]/30" /><Inbox className="h-4 w-4 text-[#f6c945]" />Security Lab</div>
             <span className="hidden h-4 w-px bg-[#34382e] sm:block" />
             <span className="hidden truncate font-mono text-[10px] text-[#74796d] sm:block">{stateLabel}</span>
             <span className="hidden items-center gap-1.5 text-[10px] text-[#62d49b] lg:flex"><span className="h-1.5 w-1.5 rounded-full bg-[#62d49b]" />{source} · {platformId || 'web'}</span>

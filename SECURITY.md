@@ -1,3 +1,5 @@
+<img src="assets/brand/stackfold-symbol-v5.png" alt="Stackfold Logo" width="56" height="56" />
+
 # Security Policy
 
 Stackfold inspects source codebases and architectural evidence. Local analysis is the default. The boundaries below describe intended handling; they are not a security certification or a guarantee that source files contain no sensitive data.
