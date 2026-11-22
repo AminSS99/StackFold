@@ -7,6 +7,10 @@ import {
   validateRepositoryPath,
   ScanCacheManager,
   scanRepository,
+  parseSignatureCompatibilityConfig,
+  parseCacheIsolationConfig,
+  replayPayloadAgainstConsumer,
+  runQueueCompatibilityCheck,
 } from '../index';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +58,153 @@ describe('Path Validator & Security Boundaries', () => {
     expect(res.isValid).toBe(true);
     expect(res.isMonorepo).toBe(true);
     expect(res.projectName).toBe('sample-monorepo-platform');
+  });
+
+  it('rejects null bytes, /etc, and sensitive credential directories (.ssh, .aws)', () => {
+    expect(validateRepositoryPath('/tmp/foo\0bar').isValid).toBe(false);
+    expect(validateRepositoryPath('/etc').errorCode).toBe('FORBIDDEN_SYSTEM_ROOT');
+    expect(validateRepositoryPath('/Users/tester/.ssh').errorCode).toBe('FORBIDDEN_SYSTEM_ROOT');
+    expect(validateRepositoryPath('/Users/tester/.aws').errorCode).toBe('FORBIDDEN_SYSTEM_ROOT');
+  });
+
+  it('blocks prototype pollution and Object.prototype key leakage in Queue Compatibility', () => {
+    const queue = {
+      id: 'q1',
+      queue: 'orders',
+      connection: 'redis',
+      producer: { file: 'p.ts', function: 'enqueue' },
+      consumer: { file: 'w.ts', function: 'process', version: 'v2' },
+      payloadVersions: ['v1', 'v2'],
+      schema: {
+        strict: true,
+        fields: [
+          {
+            path: 'toString',
+            type: 'string' as const,
+            required: true,
+            onMissing: 'fail' as const,
+            onTypeMismatch: 'fail' as const,
+          },
+        ],
+      },
+      migrations: [
+        {
+          from: 'v1',
+          to: 'v2',
+          renames: {
+            legacy: '__proto__.pollutedByQueueTest',
+          },
+        },
+      ],
+      redactPaths: [],
+    };
+    const payload = {
+      id: 'p1',
+      label: 'Proto test',
+      queue: 'q1',
+      jobName: 'job',
+      payloadVersion: 'v1',
+      dataRef: 'unused.json',
+    };
+    const outcome = replayPayloadAgainstConsumer(queue, payload, { legacy: 'bad' });
+    // 1. Object.prototype must not be polluted
+    expect(({} as Record<string, unknown>).pollutedByQueueTest).toBeUndefined();
+    // 2. Object.prototype.toString must not count as a present field on the payload
+    expect(outcome.verdict).toBe('fail');
+    expect(outcome.failingField).toBe('toString');
+  });
+
+  it('blocks dataRef path traversal outside rootPath in Queue Compatibility', async () => {
+    const res = await runQueueCompatibilityCheck(
+      {
+        schemaVersion: 1,
+        queues: [
+          {
+            id: 'q1',
+            queue: 'orders',
+            connection: 'redis',
+            producer: { file: 'p.ts', function: 'enqueue' },
+            consumer: { file: 'w.ts', function: 'process', version: 'v1' },
+            payloadVersions: ['v1'],
+            schema: {
+              strict: false,
+              fields: [
+                {
+                  path: 'name',
+                  type: 'string',
+                  required: true,
+                  onMissing: 'fail',
+                  onTypeMismatch: 'fail',
+                },
+              ],
+            },
+            migrations: [],
+            redactPaths: [],
+          },
+        ],
+        payloads: [
+          {
+            id: 'escape',
+            label: 'Traversal attempt',
+            queue: 'q1',
+            jobName: 'job',
+            payloadVersion: 'v1',
+            dataRef: '../../package.json',
+          },
+        ],
+      },
+      { rootPath: ECOM_FIXTURE_PATH }
+    );
+    expect(res.payloads[0]?.failingStep).toBe('load-payload-fixture');
+  });
+
+  it('rejects host/cloud secret env names and code injection in Signature and Cache configs', () => {
+    expect(() =>
+      parseSignatureCompatibilityConfig(
+        JSON.stringify({
+          schemaVersion: 1,
+          algorithm: 'hmac-sha256',
+          secretEnv: 'DATABASE_URL',
+          signer: { file: 's.ts', function: 'sign', canonicalization: ['raw-body'] },
+          verifier: { file: 'v.ts', function: 'verify', canonicalization: ['raw-body'] },
+          vectors: [{ id: 'v1', label: 'v1', kind: 'raw-body', method: 'POST', path: '/hook' }],
+        })
+      )
+    ).toThrow();
+
+    expect(() =>
+      parseSignatureCompatibilityConfig(
+        JSON.stringify({
+          schemaVersion: 1,
+          algorithm: 'hmac-sha256',
+          secretEnv: 'FOO; process.exit(1)',
+          signer: { file: 's.ts', function: 'sign', canonicalization: ['raw-body'] },
+          verifier: { file: 'v.ts', function: 'verify', canonicalization: ['raw-body'] },
+          vectors: [{ id: 'v1', label: 'v1', kind: 'raw-body', method: 'POST', path: '/hook' }],
+        })
+      )
+    ).toThrow();
+
+    expect(() =>
+      parseCacheIsolationConfig(
+        JSON.stringify({
+          schemaVersion: 1,
+          baseUrl: 'http://localhost:3000',
+          environment: 'test',
+          authentication: {
+            kind: 'header',
+            headerName: 'x-auth\r\nx-injected: 1',
+            sessionAEnv: 'TEST_A',
+            sessionBEnv: 'TEST_B',
+          },
+          markers: {
+            sessionAMarkerEnv: 'MARKER_A',
+            sessionBMarkerEnv: 'MARKER_B',
+          },
+          probes: [{ id: 'p1', label: 'p1', kind: 'html', path: '/me' }],
+        })
+      )
+    ).toThrow();
   });
 });
 

@@ -5,19 +5,53 @@ import { readSafeFile } from '../utils/file-system';
 
 const probeKindSchema = z.enum(['html', 'json', 'production_build']);
 
+const SAFE_ENV_NAME_REGEX = /^[A-Z_][A-Z0-9_]{1,127}$/;
+const FORBIDDEN_HOST_ENV_PATTERNS = [
+  /^DATABASE_URL$/i,
+  /^CLERK_/i,
+  /^NEXT_PUBLIC_CLERK_/i,
+  /^VERCEL/i,
+  /^AWS_/i,
+  /^GITHUB_TOKEN$/i,
+  /^GH_TOKEN$/i,
+  /^OPENAI_API_KEY$/i,
+  /^ANTHROPIC_API_KEY$/i,
+  /^STRIPE_SECRET_KEY$/i,
+  /^RESEND_API_KEY$/i,
+  /^SUPABASE_SERVICE_ROLE_KEY$/i,
+  /^PRIVATE_KEY$/i,
+  /^NPM_TOKEN$/i,
+  /^NODE_OPTIONS$/i,
+  /^PATH$/i,
+  /^HOME$/i,
+  /^USER$/i,
+];
+
+const safeSyntheticEnvSchema = z
+  .string()
+  .min(2)
+  .max(128)
+  .refine(
+    name => SAFE_ENV_NAME_REGEX.test(name) && !FORBIDDEN_HOST_ENV_PATTERNS.some(p => p.test(name)),
+    {
+      message:
+        'Environment variable reference must be a valid uppercase identifier and must not reference protected host/cloud runtime secrets.',
+    }
+  );
+
 export const cacheIsolationConfigSchema = z.object({
   schemaVersion: z.literal(1),
   baseUrl: z.string().url(),
   environment: z.string().min(1).default('production'),
   authentication: z.object({
     kind: z.literal('header'),
-    headerName: z.string().min(1),
-    sessionAEnv: z.string().min(1),
-    sessionBEnv: z.string().min(1),
+    headerName: z.string().min(1).max(128).regex(/^[A-Za-z0-9-]+$/, 'Invalid HTTP header name'),
+    sessionAEnv: safeSyntheticEnvSchema,
+    sessionBEnv: safeSyntheticEnvSchema,
   }),
   markers: z.object({
-    sessionAMarkerEnv: z.string().min(1),
-    sessionBMarkerEnv: z.string().min(1),
+    sessionAMarkerEnv: safeSyntheticEnvSchema,
+    sessionBMarkerEnv: safeSyntheticEnvSchema,
   }),
   probes: z.array(z.object({
     id: z.string().min(1),

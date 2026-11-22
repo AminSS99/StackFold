@@ -3,7 +3,11 @@
 import React, { useState } from 'react';
 import { X, Copy, Check, Download, FileText, Code2, Database } from 'lucide-react';
 import { useStackfoldStore } from '@/store/useStackfoldStore';
-import { generateMermaidDiagram, generateMarkdownReport } from '@/lib/export/graph-export';
+import {
+  generateMermaidDiagram,
+  generateMarkdownReport,
+  redactLocalUserPath,
+} from '@/lib/export/graph-export';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -31,7 +35,14 @@ export function ExportModal({ isOpen, onClose }: ExportModalProps) {
     filename = `${projectName}-ARCHITECTURE.md`;
     mimeType = 'text/markdown';
   } else {
-    content = JSON.stringify(rawGraph, null, 2);
+    const sanitizedGraph = {
+      ...rawGraph,
+      metadata: {
+        ...rawGraph.metadata,
+        rootPath: redactLocalUserPath(rawGraph.metadata.rootPath),
+      },
+    };
+    content = JSON.stringify(sanitizedGraph, null, 2);
     filename = `${projectName}-stackfold-graph.json`;
     mimeType = 'application/json';
   }

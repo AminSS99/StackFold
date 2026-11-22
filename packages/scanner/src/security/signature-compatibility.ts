@@ -57,10 +57,46 @@ const canonicalStepSchema = z.enum([
 
 export type CanonicalStep = z.infer<typeof canonicalStepSchema>;
 
+const SAFE_ENV_NAME_REGEX = /^[A-Z_][A-Z0-9_]{1,127}$/;
+const FORBIDDEN_HOST_ENV_PATTERNS = [
+  /^DATABASE_URL$/i,
+  /^CLERK_/i,
+  /^NEXT_PUBLIC_CLERK_/i,
+  /^VERCEL/i,
+  /^AWS_/i,
+  /^GITHUB_TOKEN$/i,
+  /^GH_TOKEN$/i,
+  /^OPENAI_API_KEY$/i,
+  /^ANTHROPIC_API_KEY$/i,
+  /^STRIPE_SECRET_KEY$/i,
+  /^RESEND_API_KEY$/i,
+  /^SUPABASE_SERVICE_ROLE_KEY$/i,
+  /^PRIVATE_KEY$/i,
+  /^NPM_TOKEN$/i,
+  /^NODE_OPTIONS$/i,
+  /^PATH$/i,
+  /^HOME$/i,
+  /^USER$/i,
+];
+
+export function isAllowedSyntheticEnvName(name: string): boolean {
+  if (!SAFE_ENV_NAME_REGEX.test(name)) return false;
+  return !FORBIDDEN_HOST_ENV_PATTERNS.some(pattern => pattern.test(name));
+}
+
+const safeSyntheticEnvSchema = z
+  .string()
+  .min(2)
+  .max(128)
+  .refine(isAllowedSyntheticEnvName, {
+    message:
+      'Environment variable reference must be a valid uppercase identifier and must not reference protected host/cloud runtime secrets.',
+  });
+
 export const signatureCompatibilityConfigSchema = z.object({
   schemaVersion: z.literal(1),
   algorithm: z.literal('hmac-sha256'),
-  secretEnv: z.string().min(1),
+  secretEnv: safeSyntheticEnvSchema,
   signer: z.object({
     file: z.string().min(1),
     function: z.string().min(1).default('sign'),

@@ -15,7 +15,11 @@ export function generateMermaidDiagram(graph: ProjectGraph): string {
   const modules = graph.nodes.filter(n => n.type === 'source_module' || n.type === 'component');
 
   const sanitizeId = (id: string) => id.replace(/[^a-zA-Z0-9_]/g, '_');
-  const sanitizeLabel = (label: string) => label.replace(/["<>{}[\]]/g, '');
+  const sanitizeLabel = (label: string) =>
+    label
+      .replace(/["<>{}[\]`|;\r\n]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
   if (apps.length > 0) {
     lines.push('  subgraph Applications');
@@ -79,17 +83,27 @@ export function generateMermaidDiagram(graph: ProjectGraph): string {
   return lines.join('\n');
 }
 
+export function redactLocalUserPath(rawPath?: string): string {
+  if (!rawPath) return 'Repository';
+  return rawPath
+    .replace(/^\/Users\/[^/]+\//, '~/')
+    .replace(/^\/home\/[^/]+\//, '~/')
+    .replace(/^[A-Za-z]:\\Users\\[^\\]+\\/, '~\\')
+    .replace(/^\/var\/task\//, '');
+}
+
 /**
  * Generate Markdown Architecture Report from a ProjectGraph.
  */
 export function generateMarkdownReport(graph: ProjectGraph): string {
   const date = new Date().toISOString().split('T')[0];
+  const safeRootPath = redactLocalUserPath(graph.metadata.rootPath);
   const lines: string[] = [
     `# System Architecture Report: ${graph.metadata.projectName || 'Project'}`,
     `> Generated automatically by **Stackfold** on ${date}.`,
     '',
     '## 1. Executive Summary',
-    `- **Root Path:** \`${graph.metadata.rootPath}\``,
+    `- **Root Path:** \`${safeRootPath}\``,
     `- **Frameworks Detected:** ${graph.metadata.frameworks.map(f => `\`${f}\``).join(', ') || 'Standard JavaScript/TypeScript'}`,
     `- **Total Entities:** ${graph.metadata.stats.nodeCount}`,
     `- **Total Connections:** ${graph.metadata.stats.edgeCount}`,

@@ -6,13 +6,14 @@ const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const isPublicRoute = createRouteMatcher([
   '/',
   '/download',
+  '/security-lab(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/share(.*)',
   '/api/fixtures',
   '/api/scan',
   '/api/validate-path',
-  '/api/cache',
+  '/api/security/(.*)',
 ]);
 
 export default function middleware(req: NextRequest) {

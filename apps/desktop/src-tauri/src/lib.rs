@@ -241,6 +241,7 @@ pub fn find_scanner_sidecar() -> Result<PathBuf, String> {
 
 const FORBIDDEN_ROOTS: &[&str] = &[
     "/",
+    "/root",
     "/System",
     "/private",
     "/etc",
@@ -248,21 +249,48 @@ const FORBIDDEN_ROOTS: &[&str] = &[
     "/usr",
     "/bin",
     "/sbin",
+    "/dev",
+    "/proc",
+    "/sys",
+    "/Users",
+    "/home",
     "C:\\",
     "C:\\Windows",
     "C:\\Program Files",
     "C:\\Program Files (x86)",
 ];
 
+const FORBIDDEN_CREDENTIAL_SEGMENTS: &[&str] =
+    &[".ssh", ".aws", ".gnupg", ".kube", ".docker", ".npmrc"];
+
 pub fn is_forbidden_root(canonical_path: &str) -> bool {
     let normalized = canonical_path.trim_end_matches('/');
     if normalized.is_empty() || normalized == "/" || normalized == "C:\\" {
         return true;
     }
+
+    for seg in normalized.split(['/', '\\']) {
+        if FORBIDDEN_CREDENTIAL_SEGMENTS.contains(&seg) {
+            return true;
+        }
+    }
+
+    // Reject scanning /Users or /home directly, or a top-level user home directory (/Users/<user>) without a project subfolder.
+    if normalized == "/Users" || normalized == "/home" {
+        return true;
+    }
+    if let Some(rest) = normalized
+        .strip_prefix("/Users/")
+        .or_else(|| normalized.strip_prefix("/home/"))
+    {
+        if !rest.contains('/') {
+            return true;
+        }
+    }
+
     for root in FORBIDDEN_ROOTS {
         let clean_root = root.trim_end_matches('/');
         if normalized == clean_root || normalized.starts_with(&format!("{}/", clean_root)) {
-            // Allow user home directories under /Users or /home even if / is forbidden
             if normalized.starts_with("/Users/") || normalized.starts_with("/home/") {
                 return false;
             }
@@ -420,6 +448,21 @@ pub mod commands {
         let mut target_path = params.root_path.clone();
 
         if let Some(fixture) = &params.fixture {
+            const ALLOWED_SCAN_FIXTURES: &[&str] = &[
+                "sample-ecommerce-app",
+                "sample-monorepo-platform",
+                "preview-fence-vercel-supabase",
+                "tx-escape-prisma",
+                "scopepatch-idtrace",
+                "cache-isolation-vulnerable",
+                "signature-compatibility-vulnerable",
+                "signature-compatibility-passing",
+                "queue-compatibility-failing",
+                "queue-compatibility-passing",
+            ];
+            if !ALLOWED_SCAN_FIXTURES.contains(&fixture.as_str()) {
+                return Err(format!("Unknown fixture '{}'", fixture));
+            }
             let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             let fixture_path = manifest_dir.join(format!("../../fixtures/{}", fixture));
             if fixture_path.exists() {
@@ -700,8 +743,18 @@ pub mod commands {
         root_path: String,
         editor: Option<String>,
     ) -> Result<OpenEditorResult, String> {
-        // Prevent path traversal escaping root
-        if file_path.contains("..") || file_path.starts_with('/') || file_path.starts_with('\\') {
+        // Prevent path traversal escaping root or control character injection
+        if file_path.contains("..")
+            || root_path.contains("..")
+            || file_path.starts_with('/')
+            || file_path.starts_with('\\')
+            || file_path.contains('\0')
+            || root_path.contains('\0')
+            || file_path.contains('\n')
+            || file_path.contains('\r')
+            || root_path.contains('\n')
+            || root_path.contains('\r')
+        {
             return Ok(OpenEditorResult {
                 success: false,
                 url: None,

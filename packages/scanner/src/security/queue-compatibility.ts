@@ -155,9 +155,19 @@ export function loadQueueCompatibilityConfig(rootPath: string): {
 }
 
 const DEFAULT_REDACT_LEAF_PATTERN = /token|secret|password|api[-_]?key|auth|credential|card/i;
+const FORBIDDEN_PROTO_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function hasForbiddenProtoSegment(parts: string[]): boolean {
+  return parts.some(part => FORBIDDEN_PROTO_SEGMENTS.has(part));
+}
+
+function isOwnRecordKey(obj: Record<string, unknown>, key: string): boolean {
+  return !FORBIDDEN_PROTO_SEGMENTS.has(key) && Object.prototype.hasOwnProperty.call(obj, key);
+}
 
 function getPathValue(data: unknown, pathString: string): { found: boolean; value: unknown } {
   const parts = pathString.split('.');
+  if (hasForbiddenProtoSegment(parts)) return { found: false, value: undefined };
   let current: unknown = data;
   for (const part of parts) {
     if (current === null || current === undefined) return { found: false, value: undefined };
@@ -170,51 +180,59 @@ function getPathValue(data: unknown, pathString: string): { found: boolean; valu
       continue;
     }
     if (typeof current !== 'object') return { found: false, value: undefined };
-    if (!(part in (current as Record<string, unknown>))) return { found: false, value: undefined };
-    current = (current as Record<string, unknown>)[part];
+    const record = current as Record<string, unknown>;
+    if (!isOwnRecordKey(record, part)) return { found: false, value: undefined };
+    current = record[part];
   }
   return { found: true, value: current };
 }
 
 function setPathValue(data: Record<string, unknown>, pathString: string, value: unknown): boolean {
   const parts = pathString.split('.');
+  if (hasForbiddenProtoSegment(parts)) return false;
   let current: Record<string, unknown> = data;
   for (let i = 0; i < parts.length - 1; i += 1) {
     const part = parts[i]!;
+    if (!isOwnRecordKey(current, part)) return false;
     const next = current[part];
     if (typeof next !== 'object' || next === null || Array.isArray(next)) return false;
     current = next as Record<string, unknown>;
   }
   const leaf = parts[parts.length - 1]!;
-  if (!(leaf in current)) return false;
+  if (!isOwnRecordKey(current, leaf)) return false;
   current[leaf] = value;
   return true;
 }
 
 function deletePathValue(data: Record<string, unknown>, pathString: string): boolean {
   const parts = pathString.split('.');
+  if (hasForbiddenProtoSegment(parts)) return false;
   let current: Record<string, unknown> = data;
   for (let i = 0; i < parts.length - 1; i += 1) {
     const part = parts[i]!;
+    if (!isOwnRecordKey(current, part)) return false;
     const next = current[part];
     if (typeof next !== 'object' || next === null || Array.isArray(next)) return false;
     current = next as Record<string, unknown>;
   }
   const leaf = parts[parts.length - 1]!;
-  if (!(leaf in current)) return false;
+  if (!isOwnRecordKey(current, leaf)) return false;
   delete current[leaf];
   return true;
 }
 
 function movePathValue(data: Record<string, unknown>, from: string, to: string): boolean {
+  const fromParts = from.split('.');
+  const toParts = to.split('.');
+  if (hasForbiddenProtoSegment(fromParts) || hasForbiddenProtoSegment(toParts)) return false;
   const { found, value } = getPathValue(data, from);
   if (!found) return false;
   if (getPathValue(data, to).found) return false;
-  const toParts = to.split('.');
   let current: Record<string, unknown> = data;
   for (let i = 0; i < toParts.length - 1; i += 1) {
     const part = toParts[i]!;
-    const next = current[part];
+    if (FORBIDDEN_PROTO_SEGMENTS.has(part)) return false;
+    const next = isOwnRecordKey(current, part) ? current[part] : undefined;
     if (next === undefined) {
       const created: Record<string, unknown> = {};
       current[part] = created;
@@ -224,7 +242,9 @@ function movePathValue(data: Record<string, unknown>, from: string, to: string):
     if (typeof next !== 'object' || next === null || Array.isArray(next)) return false;
     current = next as Record<string, unknown>;
   }
-  current[toParts[toParts.length - 1]!] = value;
+  const leaf = toParts[toParts.length - 1]!;
+  if (FORBIDDEN_PROTO_SEGMENTS.has(leaf)) return false;
+  current[leaf] = value;
   deletePathValue(data, from);
   return true;
 }
@@ -564,8 +584,13 @@ export async function runQueueCompatibilityCheck(
         reason: `unknown queue '${payload.queue}'`,
       };
     }
-    const dataRefPath = path.join(rootPath, payload.dataRef);
-    const content = readSafeFile(dataRefPath);
+    // Prevent path traversal or symlink escape outside rootPath
+    const isSafeRef =
+      !path.isAbsolute(payload.dataRef) &&
+      !payload.dataRef.split(/[\\/]+/).includes('..') &&
+      !payload.dataRef.includes('\0');
+    const dataRefPath = path.resolve(rootPath, payload.dataRef);
+    const content = isSafeRef ? readSafeFile(dataRefPath, rootPath) : null;
     if (!content) {
       return {
         id: payload.id,

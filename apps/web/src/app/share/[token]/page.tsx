@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/Badge';
 import { ArrowRight, Share2, Layers, Calendar } from 'lucide-react';
 import type { Metadata } from 'next';
 
+const SAFE_SHARE_TOKEN_REGEX = /^[A-Za-z0-9_-]{10,36}$/;
+
 export function generateStaticParams() {
   return [{ token: 'preview' }];
 }
@@ -19,9 +21,14 @@ export async function generateMetadata({
   params: Promise<{ token: string }>;
 }): Promise<Metadata> {
   const { token } = await params;
+  const safeLabel = SAFE_SHARE_TOKEN_REGEX.test(token) ? token.slice(0, 8) : 'Snapshot';
   return {
-    title: `Shared Architecture Map (${token}) — Stackfold`,
+    title: `Shared Architecture Map (${safeLabel}) — Stackfold`,
     description: 'Interactive architecture map shared via Stackfold Cloud.',
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
@@ -31,6 +38,9 @@ export default async function SharedMapPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  if (!SAFE_SHARE_TOKEN_REGEX.test(token)) {
+    return notFound();
+  }
   const db = getDb();
 
   if (!db) {
